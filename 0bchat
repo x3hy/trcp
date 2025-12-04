@@ -8,4 +8,5 @@ function git_push ()
 
 git_push
 gcc main.c -o /tmp/0bchat -lcrypto
+echo "---------------------------------------"
 /tmp/0bchat $@
