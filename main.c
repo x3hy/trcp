@@ -33,6 +33,7 @@ get_time(void)
 	time_t t = time(NULL);
 	struct tm tm;
 	memset(&tm, 0, sizeof(tm));
+	gmtime_r(&t, &tm);
 
 	// Get output size
 	size_t out_s = snprintf(NULL, 0, "%04d-%02d-%02dT%02d:%02d:%02d",
