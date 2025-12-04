@@ -7,6 +7,6 @@ function git_push ()
 } 
 
 git_push
-gcc main.c -o /tmp/0bchat -lcrypto
+gcc main.c -o /tmp/0bchat -lcrypto -Wall -Wextras -g
 echo "---------------------------------------"
 /tmp/0bchat $@
