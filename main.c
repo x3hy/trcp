@@ -3,11 +3,17 @@
 #include <stdlib.h>
 #include <string.h>
 
+
 typedef struct {
-	char time;
+	char *time;
+	char *message;
+	char *username;
+	char *token; // May not need 
 } message;
 
+
 static char *get_time(void);
+
 
 int 
 main()
@@ -18,6 +24,7 @@ main()
 	free(cur_date);
 	return 0;
 }	
+
 
 // Returns UTC ISO date
 static char *
