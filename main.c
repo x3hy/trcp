@@ -28,7 +28,7 @@ int
 main()
 {
 	// Init app 
-	app.username = "tes123";
+	app.username = strdup("tes123");
 
 	// Init message
 	message test = msg_init("test123");
