@@ -38,8 +38,9 @@ main()
 {
 	// Init app 
 	base.username = strdup("tes123");
-	base.server.ip = strdup("http://127.0.0.1:5511");
-	base.server.endpoint = strdup("/msg");
+	base.server.ip = strdup("http://127.0.0.1");
+	base.server.port = 5511;
+	base.server.endpoint = strdup("msg");
 
 	// Init message
 	message test = msg_init("test123");
@@ -70,7 +71,7 @@ get_time(void)
 			1900+tm.tm_year, tm.tm_mon+1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec);
 
 	char *out = (char *)malloc(out_s + 1);
-	snprintf(out, out_s, "%04d-%02d-%02dT%02d:%02d:%02d", 
+	snprintf(out, out_s + 1, "%04d-%02d-%02dT%02d:%02d:%02d", 
 			1900+tm.tm_year, tm.tm_mon+1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec);
 
 	// Return the iso date 
@@ -122,7 +123,7 @@ server_url(app_config app)
 
 	out = malloc(out_s + 1);
 
-	snprintf(out, out_s, "%s:%d/%s", 
+	snprintf(out, out_s + 1, "%s:%d/%s", 
 			app.server.ip,
 			app.server.port,
 			app.server.endpoint);
@@ -145,7 +146,7 @@ msg_url(message msg)
 
 	out = malloc(out_s + 1);
 
-	snprintf(out, out_s, "%s/%s/%s/%s",
+	snprintf(out, out_s + 1, "%s/%s/%s/%s",
 			serv,
 			msg.username,
 			msg.time,
