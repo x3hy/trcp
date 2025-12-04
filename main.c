@@ -27,6 +27,10 @@ static app_config app;
 int 
 main()
 {
+	// Init app 
+	app.username = "tes123";
+
+	// Init message
 	message test = msg_init("test123");
 	msg_print(test);
 	msg_free(&test);
