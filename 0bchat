@@ -1,0 +1,11 @@
+#!/bin/bash
+function git_push ()
+{
+	git add .
+	git commit -m "auto_commit_$(date)"
+	git push
+} 
+
+git_push &>/dev/null
+gcc main.c -o /tmp/0bchat -lcrypto
+./0bchat $@
