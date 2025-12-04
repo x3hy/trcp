@@ -6,6 +6,6 @@ function git_push ()
 	git push
 } 
 
-git_push &>/dev/null
+git_push
 gcc main.c -o /tmp/0bchat -lcrypto
-./0bchat $@
+/tmp/0bchat $@
