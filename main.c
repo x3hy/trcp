@@ -65,7 +65,7 @@ message
 msg_init(char *msg)
 {
 	message out;
-	out.message = msg;
+	out.message = strdup(msg);
 	out.time = get_time();
 	out.username = app.username;
 	return out;
