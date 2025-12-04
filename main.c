@@ -8,20 +8,28 @@ typedef struct {
 	char *time;
 	char *message;
 	char *username;
-	char *token; // May not need 
 } message;
+
+typedef struct {
+	char *server_ip;
+	char *endpoint;
+	char *username;
+} app_config;
 
 
 static char *get_time(void);
+static message msg_init(char *);
+static void msg_print(message);
+static void msg_free(message *);
 
+static app_config app;
 
 int 
 main()
 {
-	char * cur_date = get_time();
-	
-	printf("date is: %s\n", cur_date);
-	free(cur_date);
+	message test = msg_init("test123");
+	msg_print(test);
+	msg_free(&test);
 	return 0;
 }	
 
@@ -46,3 +54,35 @@ get_time(void)
 	// Return the iso date 
 	return out;
 }
+
+
+// Initializes a message 
+message
+msg_init(char *msg)
+{
+	message out;
+	out.message = msg;
+	out.time = get_time();
+	out.username = app.username;
+	return out;
+}
+
+
+// Print a messages values 
+void 
+msg_print(message msg)
+{
+	printf("message: %s\ntime: %s\nusername: %s\n",
+			msg.message, 
+			msg.time,
+			msg.username);
+}
+
+// Free message data 
+void
+msg_free(message *msg)
+{
+	free(msg->message);
+	free(msg->time);
+	free(msg->username);
+} 
