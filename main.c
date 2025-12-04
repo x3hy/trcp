@@ -29,7 +29,9 @@ static char *msg_url(message);
 static char *server_url(app_config);
 static void free_app_config(app_config);
 
+
 static app_config base;
+
 
 int 
 main()
@@ -42,6 +44,12 @@ main()
 	// Init message
 	message test = msg_init("test123");
 	msg_print(test);
+	
+	// Generate URL
+	char * url = msg_url(test);
+	printf("%s\n", url);
+
+	free(url);
 
 	msg_free(&test);
 	return 0;
