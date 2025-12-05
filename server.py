@@ -6,7 +6,7 @@ from datetime import datetime, timezone
 
 
 def get_iso_time():
-    return datetime.now(datetime.timezone.utc).isoformat()
+    return datetime.now(timezone.utc).isoformat()
 
 def resp(msg, code):
     return flask.jsonify({
