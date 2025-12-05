@@ -7,6 +7,6 @@ function git_push ()
 } 
 
 git_push
-gcc main.c -o /tmp/0bchat -lcrypto -g 
+gcc main.c remote/cjson/cjson.c -o /tmp/0bchat -lcrypto -g  
 echo "---------------------------------------"
 /tmp/0bchat $@
