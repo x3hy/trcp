@@ -43,7 +43,7 @@ def post(username, time, message):
             }
     
     server.append(message);
-    return resp("posted",200);
+    return resp("liar",200);
 
 @app.route("/g")
 def get_server_data():
