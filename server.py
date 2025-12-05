@@ -11,8 +11,8 @@ def get_iso_time():
 def resp(msg, code):
     return flask.jsonify({
             "message": msg,
-            "code", code;
-        })
+            "code": code
+            })
 
 
 app = flask.Flask(__name__)
