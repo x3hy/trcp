@@ -4,6 +4,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <openssl/pem.h>
+#include "remote/cjson/cJSON.h"
+#include <curl/curl.h>
 
 
 typedef struct {
@@ -11,6 +13,11 @@ typedef struct {
 	char *message;
 	char *username;
 } message;
+
+struct mem {
+	char *mem;
+	size_t size;
+};
 
 typedef struct {
 	struct {
@@ -20,6 +27,12 @@ typedef struct {
 	} server;
 	char *username;
 } app_config;
+
+typedef struct {
+	char *message;
+	int code;
+} msg_return;
+
 
 
 static char *get_time(void);
@@ -31,6 +44,9 @@ static char *server_url(app_config);
 static void free_app_config(app_config);
 static char *base64_encode(const unsigned char *, size_t);
 static char *base64_decode(const char *, size_t *);
+static size_t write_callback(void *contents, size_t size, size_t nmemb, void *userp);
+static cJSON *get_url_json(const char *url);
+static msg_return post_msg(message msg);
 
 
 static app_config base;
@@ -51,14 +67,14 @@ main()
 
 	// Init message
 	message test = msg_init("test123");
-	msg_print(test);
 	
-	// Generate URL
-	char * url = msg_url(test);
-	printf("%s\n", url);
+	msg_return ret = post_msg(test);
+	printf("msg: %s\ncode: %d\n",ret.message, ret.code);
+
+
+	free(ret.message);
 
 	// Clean up
-	free(url);
 	msg_free(&test);
 	return 0;
 }
@@ -245,4 +261,104 @@ char *base64_decode(const char *input, size_t *out_len) {
     free(clean_input);
 
     return output;
+}
+
+static size_t 
+write_callback(void *contents, size_t size, size_t nmemb, void *userp)
+{
+	size_t realsize = size * nmemb;
+	struct mem *mems = (struct mem *)userp;
+
+	char *ptr = realloc(mems->mem, mems->size + realsize + 1);
+	if(!ptr) 
+	{
+		fprintf(stderr, "realloc() failed\n");
+		return 0;
+	}
+
+	mems->mem = ptr;
+	memcpy(&(mems->mem[mems->size]), contents, realsize);
+	mems->size += realsize; 
+	mems->mem[mems->size] = 0;
+
+	return realsize;
+}
+
+cJSON *
+get_url_json(const char *url)
+{
+  CURL *curl = NULL;
+  CURLcode res;
+  struct mem chunk = {.mem = NULL, .size = 0};
+  cJSON *root = NULL;
+
+  chunk.mem = malloc(1);
+  if (!chunk.mem)
+    return NULL;
+
+  curl_global_init(CURL_GLOBAL_DEFAULT);
+  curl = curl_easy_init();
+  
+	if (!curl)
+	{
+    free(chunk.mem);
+    return NULL;
+  }
+
+  curl_easy_setopt(curl, CURLOPT_URL, url);
+  curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_callback);
+  curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *)&chunk);
+  curl_easy_setopt(curl, CURLOPT_USERAGENT, "curl-cjson-example/1.0");
+  curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
+  curl_easy_setopt(curl, CURLOPT_TIMEOUT, 30L);
+
+  res = curl_easy_perform(curl);
+
+  if (res != CURLE_OK)
+	{
+    fprintf(stderr, "curl_easy_perform() failed: %s\n",
+            curl_easy_strerror(res));
+  } else {
+    root = cJSON_Parse(chunk.mem);
+    if (!root)
+		{
+      const char *error_ptr = cJSON_GetErrorPtr();
+      if (error_ptr)
+        fprintf(stderr, "JSON Error before: %s\n", error_ptr);
+      else
+        fprintf(stderr, "Failed to parse JSON (NULL returned)\n");
+    }
+  }
+
+  curl_easy_cleanup(curl);
+  curl_global_cleanup();
+  free(chunk.mem);
+	// Use cJSON_Delete(root) when done
+  return root; 
+}
+
+
+static msg_return 
+post_msg(message msg)
+{
+	char *url = msg_url(msg);
+	cJSON *resp = get_url_json(url);
+
+	cJSON_AddArrayToObject(resp, "message");
+	cJSON *message = cJSON_GetObjectItemCaseSensitive(resp, "message");
+	cJSON *code = cJSON_GetObjectItemCaseSensitive(resp, "code");
+
+	if(!cJSON_IsString(message) || !cJSON_IsNumber(code)){
+		fprintf(stderr, "server returned invalid data!\n");
+		return (msg_return){0};
+	}
+	
+	msg_return out;
+	out.message = strdup(message->valuestring);
+	out.code = code->valueint;
+
+	cJSON_Delete(resp);
+	free(url);
+
+	return out;
 }
