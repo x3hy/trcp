@@ -36,8 +36,8 @@ static char *base64_decode(const char *, size_t *);
 static app_config base;
 
 
-#define b64e(c) base64_encode(c, strlen(c))
-#define b64d(c) base64_decode(c, strlen(c)) 
+#define b64e(c) base64_encode((unsigned char *)c, strlen(c))
+#define b64d(c) base64_decode((unsigned char *)c, strlen(c)) 
 
 
 int 
@@ -166,6 +166,11 @@ msg_url(message msg)
 			msg_username,
 			msg_time,
 			msg_message);
+
+
+	free(msg_username);
+	free(msg_time);
+	free(msg_message);
 	return out;
 }
 
