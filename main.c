@@ -76,26 +76,20 @@ main()
 
   free(ret.message);
 
-	/*
 	char *get_n_url = server_url_at_point(base, base.server.endpoint.GET2);
 
 	
 	while(1)
 	{
 		cJSON *resp = get_url_json(get_n_url);
-		const int count = resp->valueint;
-		printf("count: %d\n", count);
+		printf("count: %s\n", resp->valuestring);
 		fflush(stdout);
 		
-		if(count == 10)
-			break;
-
 		sleep(5);
 	}
 
 
 	free(get_n_url);
-	*/
 
   // Clean up
   msg_free(&test);
