@@ -1,5 +1,6 @@
 #include "remote/cjson/cJSON.h"
 #include "remote/plib/lib/input.h"
+#include "remote/plib/lib/ansi.h"
 #include "remote/plib/plib.h"
 #include <curl/curl.h>
 #include <openssl/pem.h>
@@ -92,7 +93,7 @@ main(int argc, char * argv[])
 		return 1;
 	}
 	
-  // Init app
+  // Init app (point of no return)
 	base.username = strdup(PL_G(p_user));
 	base.server.ip = strdup(PL_G(p_ip));
 	base.server.port = atoi(PL_G(p_port));
@@ -101,8 +102,23 @@ main(int argc, char * argv[])
   base.server.endpoint.GET.msg = strdup("get_msg");
 	base.server.endpoint.GET.msg_count = strdup("msg_count");
 	base.server.endpoint.GET.ping = strdup("ping");
+	
+	// Enable misc ANSI
+	_in_raw();
+	enable_mouse_reporting_ansi();
+	activate_terminal_buffer();
+	hide_cursor();
+
+	sleep(3);
+	
 
 	// Clean up 
+	_in_no_raw();
+	disable_mouse_reporting_ansi();
+	deactivate_terminal_buffer();
+	show_cursor();
+	
+	free_app_config(base);
 	return 0;
 }
 
