@@ -3,6 +3,13 @@ import flask_cors
 import string
 import random 
 from datetime import datetime, timezone 
+from base64 import urlsafe_b64encode, urlsafe_b64decode
+
+def uri_b64encode(s):
+     return urlsafe_b64encode(s).strip('=')
+
+def uri_b64decode(s):
+     return urlsafe_b64decode(s + '=' * (4 - len(s) % 4))
 
 
 def get_iso_time():
@@ -22,6 +29,10 @@ server = []
 
 @app.route("/p/<username>/<time>/<message>")
 def post(username, time, message):
+    username = uri_b64decode(username)
+    time = uri_b64decode(time)
+    message = uri_b64decode(message)
+
     print(f"username: {username}\ntime: {time}\nmsg: {message}")
     
     message = {
