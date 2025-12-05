@@ -7,6 +7,7 @@
 #include <string.h>
 #include <time.h>
 #include <pthread.h>
+#include <unistd.h>
 
 typedef struct {
   char *time;
@@ -41,21 +42,24 @@ static char *get_time(void);
 static message msg_init(char *);
 static void msg_print(message);
 static void msg_free(message *);
-static char *msg_url(message);
+static char *msg_url(message, app_config);
 static char *server_url(app_config);
 static void free_app_config(app_config);
 static char *base64_encode(const unsigned char *, size_t);
 static char *base64_decode(const char *, size_t *);
-static size_t write_callback(void *contents, size_t size, size_t nmemb, void *userp);
-static cJSON *get_url_json(const char *url);
-static msg_return post_msg(message msg);
+static size_t write_callback(void *, size_t, size_t, void *);
+static cJSON *get_url_json(const char *);
+static msg_return post_msg(message);
+static char * server_url_at_point(app_config, char*);
 
 static app_config base;
 
 #define b64e(c) base64_encode((unsigned char *)c, strlen(c))
 #define b64d(c) base64_decode((unsigned char *)c, strlen(c))
 
-int main() {
+int
+main()
+{
   // Init app
   base.username = strdup("tes123");
   base.server.ip = strdup("http://127.0.0.1");
@@ -72,6 +76,22 @@ int main() {
 
   free(ret.message);
 
+	char *get_n_url = server_url(base);
+
+	while(1)
+	{
+		cJSON *resp = get_url_json(get_n_url);
+		const int count = resp->valueint;
+		printf("count: %d\n", count);
+		fflush(stdout);
+		
+		if(count == 10)
+			break;
+
+		sleep(5);
+	}
+
+	free(get_n_url);
 
   // Clean up
   msg_free(&test);
@@ -154,24 +174,43 @@ static char *
 server_url(app_config app)
 {
   char *out;
-  size_t out_s = snprintf(NULL, 0, "%s:%d/%s", 
+  size_t out_s = snprintf(NULL, 0, "%s:%d", 
 			app.server.ip, 
-			app.server.port,
-      app.server.endpoint.POST);
+			app.server.port);
 
   out = malloc(out_s + 1);
 
-  snprintf(out, out_s + 1, "%s:%d/%s", 
+  snprintf(out, out_s + 1, "%s:%d", 
 			app.server.ip, 
-			app.server.port,
-      app.server.endpoint.POST);
+			app.server.port);
 
   return out;
 }
 
+static char *
+server_url_at_point(app_config app, char* endpoint)
+{
+	char * serv = server_url(app);
+
+	char *out;
+	size_t out_s = snprintf(NULL, 0, "%s/%s",
+			serv,
+			endpoint);
+
+	out = malloc(out_s + 1);
+
+	snprintf(out, out_s + 1, "%s/%s",
+			serv,
+			endpoint);
+
+	// Clean up
+	free(serv);
+	return out;
+}
+
 // Generate a URL for posting message to server
 static char *
-msg_url(message msg)
+msg_url(message msg, app_config app)
 {
   char *out;
 
@@ -180,13 +219,21 @@ msg_url(message msg)
   char *msg_message = b64e(msg.message);
 
   char *serv = server_url(base);
-  size_t out_s = snprintf(NULL, 0, "%s/%s/%s/%s", serv, msg_username, msg_time,
-                          msg_message);
+  size_t out_s = snprintf(NULL, 0, "%s/%s/%s/%s/%s", 
+			serv, 
+			app.server.endpoint.POST, 
+			msg_username, 
+			msg_time,
+      msg_message);
 
   out = malloc(out_s + 1);
 
-  snprintf(out, out_s + 1, "%s/%s/%s/%s", serv, msg_username, msg_time,
-           msg_message);
+  snprintf(out, out_s + 1, "%s/%s/%s/%s/%s", 
+			serv, 
+			app.server.endpoint.POST, 
+			msg_username, 
+			msg_time,
+      msg_message);
 
   free(msg_username);
   free(msg_time);

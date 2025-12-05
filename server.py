@@ -1,18 +1,20 @@
-import flask 
-import flask_cors 
-import string
-import random 
-from datetime import datetime, timezone 
+import flask
+import flask_cors
+from datetime import datetime, timezone
 from base64 import urlsafe_b64encode, urlsafe_b64decode
 
+
 def uri_b64encode(s):
-     return urlsafe_b64encode(s).strip('=')
+    return urlsafe_b64encode(s).strip('=')
+
 
 def uri_b64decode(s):
-     return urlsafe_b64decode(s + '=' * (4 - len(s) % 4))
+    return urlsafe_b64decode(s + '=' * (4 - len(s) % 4))
+
 
 def get_iso_time():
     return datetime.now(timezone.utc).isoformat()
+
 
 def resp(msg, code):
     return flask.jsonify({
@@ -20,10 +22,11 @@ def resp(msg, code):
             "code": code
             })
 
+
 app = flask.Flask(__name__)
 CORS = flask_cors.CORS(app)
-
 server = []
+
 
 @app.route("/p/<username>/<time>/<message>")
 def post(username, time, message):
@@ -32,19 +35,26 @@ def post(username, time, message):
     message = uri_b64decode(message).decode()
 
     print(f"username: {username}\ntime: {time}\nmsg: {message}")
-    
+
     message = {
             "username": username,
             "time_sent": time,
             "message": message,
             "time_valid": get_iso_time()}
-    
-    server.append(message);
-    return resp("liar",200);
+
+    server.append(message)
+    return resp("liar", 200)
+
 
 @app.route("/g")
 def get_server_data():
-    return flask.jsonify(server);
+    return flask.jsonify(server)
+
+
+@app.route("/n")
+def get_server_n():
+    return len(server)
+
 
 if __name__ == "__main__":
-    app.run(port = 8911, host="0.0.0.0")
+    app.run(port=8911, host="0.0.0.0")
