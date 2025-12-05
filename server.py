@@ -53,7 +53,7 @@ def get_server_data():
 
 @app.route("/n")
 def get_server_n():
-    return len(server)
+    return resp(len(server), 200)
 
 
 if __name__ == "__main__":
