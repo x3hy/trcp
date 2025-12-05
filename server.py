@@ -15,7 +15,7 @@ CORS = flask_cors.CORS(app)
 users = []
 server = {}
 
-@app.route("/p/<username>/<time>/<message>", methods=["POST"])
+@app.route("/p/<username>/<time>/<message>")
 def post(username, time, message):
     printf(f"username: {username}\ntime: {time}\nmsg: {message}")
     return "message_posted", 200
