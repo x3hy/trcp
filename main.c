@@ -32,8 +32,12 @@ static void free_app_config(app_config);
 static char *base64_encode (const void *, size_t);
 static char *base64_decode (const void *, size_t);
 
-		
+
 static app_config base;
+
+
+#define b64e(c) base64_encode(c, strlen(c))
+#define b64d(c) base64_decode(c, strlen(c)) 
 
 
 int 
@@ -53,17 +57,8 @@ main()
 	char * url = msg_url(test);
 	printf("%s\n", url);
 
+	// Clean up
 	free(url);
-	
-	char* base64 = base64_encode("test123", strlen("test123"));
-	printf("%s\n",base64);
-
-	char *decoded_base64 = base64_decode(base64, strlen(base64)); 
-	
-	printf("%s\n", decoded_base64);
-	free(base64);
-	free(decoded_base64);
-
 	msg_free(&test);
 	return 0;
 }
@@ -87,7 +82,7 @@ get_time(void)
 			1900+tm.tm_year, tm.tm_mon+1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec);
 
 
-	// Return the iso date 
+	// Return the ISO date 
 	return out;
 }
 
@@ -144,27 +139,33 @@ server_url(app_config app)
 	return out;
 }
 
-// Generate a url for posting message to server 
+
+
+// Generate a URL for posting message to server 
 static char *
 msg_url(message msg)
 {
 	char *out;
 
+	char *msg_username = b64e(msg.username);
+	char *msg_time = b64e(msg.time);
+	char *msg_message = b64e(msg.message);
+
+
 	char *serv = server_url(base);
 	size_t out_s = snprintf(NULL, 0, "%s/%s/%s/%s",
 			serv,
-			msg.username,
-			msg.time,
-			msg.message);
+			msg_username,
+			msg_time,
+			msg_message);
 
 	out = malloc(out_s + 1);
 
 	snprintf(out, out_s + 1, "%s/%s/%s/%s",
 			serv,
-			msg.username,
-			msg.time,
-			msg.message);
-
+			msg_username,
+			msg_time,
+			msg_message);
 	return out;
 }
 
