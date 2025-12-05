@@ -70,7 +70,7 @@ main()
 	base.server.endpoint.GET = strdup("g");
 
 	// Init message
-	message test = msg_init("test123");
+	message test = msg_init("the cat smells");
 	
 	msg_return ret = post_msg(test);
 	printf("msg: %s\ncode: %d\n",ret.message, ret.code);
