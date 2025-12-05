@@ -49,7 +49,7 @@ static char *base64_encode(const unsigned char *, size_t);
 static char *base64_decode(const char *, size_t *);
 static size_t write_callback(void *, size_t, size_t, void *);
 static cJSON *get_url_json(const char *);
-static msg_return post_msg(message);
+static msg_return post_msg(message, app_config);
 static char * server_url_at_point(app_config, char*);
 
 static app_config base;
@@ -396,9 +396,9 @@ get_url_json(const char *url)
 }
 
 static msg_return
-post_msg(message msg)
+post_msg(message msg, app_config app)
 {
-  char *url = msg_url(msg);
+  char *url = msg_url(msg, app);
   cJSON *resp = get_url_json(url);
 
   cJSON_AddArrayToObject(resp, "message");
