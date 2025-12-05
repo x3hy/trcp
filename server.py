@@ -2,7 +2,7 @@ import flask
 import flask_cors 
 import string
 import random 
-import datetime 
+from datetime import datetime 
 
 
 def get_iso_time():
