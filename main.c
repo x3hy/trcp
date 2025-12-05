@@ -72,7 +72,8 @@ main(int argc, char * argv[])
 	pl_arg *p_port = PL_A("--port", "Set port", .takes_value = 1, .short_flag = "-p", .required = 1);
 	pl_r plib_r;
 
-	if((plib_r = PL_PROC()) != PL_SUCCESS){
+	if((plib_r = PL_PROC()) != PL_SUCCESS)
+	{
 		PL_E_INFO(plib_r);
 		pl_help();
 		return 1;
