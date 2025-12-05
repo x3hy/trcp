@@ -88,7 +88,7 @@ main()
 
 		fflush(stdout);
 
-		if(count >= 5)
+		if(count >= 10)
 			break;
 		
 		sleep(5);
