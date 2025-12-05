@@ -68,6 +68,9 @@ main()
 	free(base64);
 
 	char *decoded_base64 = base64_decode((unsigned char *)base64, strlen(base64)); 
+	
+	printf("%s\n", decoded_base64);
+	free(decoded_base64);
 
 	msg_free(&test);
 	return 0;
