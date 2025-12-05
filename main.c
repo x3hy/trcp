@@ -179,36 +179,65 @@ free_app_config(app_config app)
 }
 
 
-char *base64_encode (const void *b64_encode_this, size_t encode_this_many_bytes){
-    BIO *b64_bio, *mem_bio;
-    BUF_MEM *mem_bio_mem_ptr;
-    b64_bio = BIO_new(BIO_f_base64());
-    mem_bio = BIO_new(BIO_s_mem());
-    BIO_push(b64_bio, mem_bio);
-    BIO_set_flags(b64_bio, BIO_FLAGS_BASE64_NO_NL);
-    BIO_write(b64_bio, b64_encode_this, encode_this_many_bytes);
-    BIO_flush(b64_bio);
-    BIO_get_mem_ptr(mem_bio, &mem_bio_mem_ptr);
-    BIO_set_close(mem_bio, BIO_NOCLOSE);
-    BIO_free_all(b64_bio);
-    BUF_MEM_grow(mem_bio_mem_ptr, (*mem_bio_mem_ptr).length + 1);
-    (*mem_bio_mem_ptr).data[(*mem_bio_mem_ptr).length] = '\0';
-    return (*mem_bio_mem_ptr).data;
-}
+char *base64url_encode(const unsigned char *data, size_t input_length) {
+    BIO *b64 = BIO_new(BIO_f_base64());
+    BIO *bio = BIO_new(BIO_s_mem());
+    BUF_MEM *buffer_ptr;
 
-char *base64_decode (const void *b64_decode_this, size_t decode_this_many_bytes){
-    BIO *b64_bio, *mem_bio;
-    char *base64_decoded = calloc( (decode_this_many_bytes*3)/4+1, sizeof(char) );
-    b64_bio = BIO_new(BIO_f_base64());
-    mem_bio = BIO_new(BIO_s_mem());
-    BIO_write(mem_bio, b64_decode_this, decode_this_many_bytes);
-    BIO_push(b64_bio, mem_bio);
-    BIO_set_flags(b64_bio, BIO_FLAGS_BASE64_NO_NL);
-    int decoded_byte_index = 0;
-    while ( 0 < BIO_read(b64_bio, base64_decoded+decoded_byte_index, 1) ){
-        decoded_byte_index++;
+    BIO_set_flags(b64, BIO_FLAGS_BASE64_NO_NL);
+    bio = BIO_push(b64, bio);
+
+    BIO_write(bio, data, input_length);
+    BIO_flush(bio);
+    BIO_get_mem_ptr(bio, &buffer_ptr);
+
+    // Duplicate and modify to make URL-safe
+    char *url_safe = malloc(buffer_ptr->length + 1);
+    memcpy(url_safe, buffer_ptr->data, buffer_ptr->length);
+    url_safe[buffer_ptr->length] = '\0';
+
+    for (size_t i = 0; i < buffer_ptr->length; ++i) {
+        if (url_safe[i] == '+') url_safe[i] = '-';
+        else if (url_safe[i] == '/') url_safe[i] = '_';
+        else if (url_safe[i] == '=') { url_safe[i] = '\0'; break; } // strip padding
     }
-    BIO_free_all(b64_bio);
-    return base64_decoded;
+
+    // Clean up
+    BIO_free_all(bio);
+
+    return url_safe; // Remember to free() when done!
 }
 
+char *base64url_decode(const char *input, size_t *out_len) {
+    size_t len = strlen(input);
+    char *clean_input = malloc(len + 4);
+
+    size_t i = 0, j = 0;
+    while (i < len) {
+        char c = input[i++];
+        if (c == '-') c = '+';
+        else if (c == '_') c = '/';
+        clean_input[j++] = c;
+    }
+
+    // Add missing padding
+    while (j % 4 != 0) clean_input[j++] = '=';
+    clean_input[j] = '\0';
+
+    // Now decode normally using your existing function or similar
+    BIO *b64 = BIO_new(BIO_f_base64());
+    BIO *mem = BIO_new_mem_buf(clean_input, -1);
+    BIO_set_flags(b64, BIO_FLAGS_BASE64_NO_NL);
+    mem = BIO_push(b64, mem);
+
+    char *output = malloc((len * 3) / 4 + 1);
+    int decoded_len = BIO_read(mem, output, len * 3 / 4 + 1);
+    output[decoded_len] = '\0';
+
+    if (out_len) *out_len = decoded_len;
+
+    BIO_free_all(mem);
+    free(clean_input);
+
+    return output;
+}
