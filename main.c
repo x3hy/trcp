@@ -72,17 +72,20 @@ int main() {
 
   free(ret.message);
 
+
+  // Clean up
+  msg_free(&test);
+	
 	free(base.username);
 
 	free(base.server.ip);
 	free(base.server.endpoint.POST);
 	free(base.server.endpoint.GET);
 	free(base.server.endpoint.GET2);
-
-  // Clean up
-  msg_free(&test);
-  return 0;
+  
+	return 0;
 }
+
 
 // Returns UTC ISO date
 static char
@@ -123,7 +126,7 @@ msg_init(char *msg)
   message out;
   out.message = strdup(msg);
   out.time = get_time();
-  out.username = base.username;
+  out.username = strdup(base.username);
   return out;
 }
 
