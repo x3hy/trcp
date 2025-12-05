@@ -11,7 +11,6 @@ def uri_b64encode(s):
 def uri_b64decode(s):
      return urlsafe_b64decode(s + '=' * (4 - len(s) % 4))
 
-
 def get_iso_time():
     return datetime.now(timezone.utc).isoformat()
 
@@ -20,7 +19,6 @@ def resp(msg, code):
             "message": msg,
             "code": code
             })
-
 
 app = flask.Flask(__name__)
 CORS = flask_cors.CORS(app)
@@ -39,8 +37,7 @@ def post(username, time, message):
             "username": username,
             "time_sent": time,
             "message": message,
-            "time_valid": get_iso_time()
-            }
+            "time_valid": get_iso_time()}
     
     server.append(message);
     return resp("liar",200);
