@@ -70,6 +70,7 @@ main(int argc, char * argv[])
 
 	if((plib_r = PL_PROC()) != PL_SUCCESS){
 		PL_E_INFO(plib_r);
+		return 1;
 	}
 
 	if(base.server.port == 0 && strcmp(PL_G(p_port), "0") != 0)
