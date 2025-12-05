@@ -3,6 +3,7 @@
 #include <time.h>
 #include <stdlib.h>
 #include <string.h>
+#include <openssl/pem.h>
 
 
 typedef struct {
@@ -28,20 +29,11 @@ static void msg_free(message *);
 static char *msg_url(message); 
 static char *server_url(app_config);
 static void free_app_config(app_config);
-static char* base64_decode(unsigned char *, const size_t);
-static char* base64_encode(const unsigned char *, size_t);
+static char *base64_encode (const void *, size_t);
+static char *base64_decode (const void *, size_t);
 
 		
 static app_config base;
-static const unsigned char base64_table[65] = 
-	"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
-static const int B64index[256] = { 0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
-0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
-0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0, 62, 63, 62, 62, 63, 52, 53, 54, 55,
-56, 57, 58, 59, 60, 61,  0,  0,  0,  0,  0,  0,  0,  0,  1,  2,  3,  4,  5,  6,
-7,  8,  9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25,  0,
-0,  0,  0, 63,  0, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40,
-41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51 };
 
 
 int 
@@ -185,88 +177,37 @@ free_app_config(app_config app)
 	free(app.server.endpoint);
 }
 
-// Source: Jouni Malinen (Converted from C++)
-static char *
-base64_encode(const unsigned char *src, size_t len)
-{
-	unsigned char *out, *pos;
-	const unsigned char *end, *in;
 
-	size_t olen;
-
-	olen = 4*((len +2) / 3);
-
-	if(olen < len)
-		return NULL;
-
-	char * outStr;
-	outStr = malloc(olen + 1);
-	out = (unsigned char *)&outStr[0];
-
-	end = src + len;
-	in = src;
-	pos = out;
-	while(end - in >= 3)
-	{
-		*pos++ = base64_table[in[0] >> 2];
-		*pos++ = base64_table[((in[0] & 0x03) << 4) | (in[1] >> 4)];
-		*pos++ = base64_table[((in[1] & 0x0f) << 2) | (in[2] >> 6)];
-		*pos++ = base64_table[in[2] & 0x3f];
-		in += 3;
-	}
-
-	if(end - in)
-	{
-		*pos++ = base64_table[in[0] >> 2];
-		
-		if(end - in == 1)
-		{
-			*pos++ = base64_table[(in[0] & 0x03) << 4];
-			*pos = '=';
-		} else { 
-			*pos++ = base64_table[((in[0] & 0x03) << 4) | (in[1] >> 4)];
-			*pos++ = base64_table[(in[1] & 0x0f) << 2];
-		}
-
-		*pos++ = '=';
-	}
-
-	return outStr;
+char *base64_encode (const void *b64_encode_this, size_t encode_this_many_bytes){
+    BIO *b64_bio, *mem_bio;      //Declares two OpenSSL BIOs: a base64 filter and a memory BIO.
+    BUF_MEM *mem_bio_mem_ptr;    //Pointer to a "memory BIO" structure holding our base64 data.
+    b64_bio = BIO_new(BIO_f_base64());                      //Initialize our base64 filter BIO.
+    mem_bio = BIO_new(BIO_s_mem());                           //Initialize our memory sink BIO.
+    BIO_push(b64_bio, mem_bio);            //Link the BIOs by creating a filter-sink BIO chain.
+    BIO_set_flags(b64_bio, BIO_FLAGS_BASE64_NO_NL);  //No newlines every 64 characters or less.
+    BIO_write(b64_bio, b64_encode_this, encode_this_many_bytes); //Records base64 encoded data.
+    BIO_flush(b64_bio);   //Flush data.  Necessary for b64 encoding, because of pad characters.
+    BIO_get_mem_ptr(mem_bio, &mem_bio_mem_ptr);  //Store address of mem_bio's memory structure.
+    BIO_set_close(mem_bio, BIO_NOCLOSE);   //Permit access to mem_ptr after BIOs are destroyed.
+    BIO_free_all(b64_bio);  //Destroys all BIOs in chain, starting with b64 (i.e. the 1st one).
+    BUF_MEM_grow(mem_bio_mem_ptr, (*mem_bio_mem_ptr).length + 1);   //Makes space for end null.
+    (*mem_bio_mem_ptr).data[(*mem_bio_mem_ptr).length] = '\0';  //Adds null-terminator to tail.
+    return (*mem_bio_mem_ptr).data; //Returns base-64 encoded data. (See: "buf_mem_st" struct).
 }
 
-// https://stackoverflow.com/questions/180947/base64-decode-snippet-in-c/13935718
-char* 
-base64_decode(unsigned char *p, const size_t len)
-{
-	int pad = len > 0 && (len % 4 || p[len -1] == '=');
-	const size_t L = ((len + 3) / 4 - pad) * 4;
-	const size_t str_size = L / 4 * 3 + pad;
-	char *str = malloc(str_size + 1);
+char *base64_decode (const void *b64_decode_this, size_t decode_this_many_bytes){
+    BIO *b64_bio, *mem_bio;      //Declares two OpenSSL BIOs: a base64 filter and a memory BIO.
+    char *base64_decoded = calloc( (decode_this_many_bytes*3)/4+1, sizeof(char) ); //+1 = null.
+    b64_bio = BIO_new(BIO_f_base64());                      //Initialize our base64 filter BIO.
+    mem_bio = BIO_new(BIO_s_mem());                         //Initialize our memory source BIO.
+    BIO_write(mem_bio, b64_decode_this, decode_this_many_bytes); //Base64 data saved in source.
+    BIO_push(b64_bio, mem_bio);          //Link the BIOs by creating a filter-source BIO chain.
+    BIO_set_flags(b64_bio, BIO_FLAGS_BASE64_NO_NL);          //Don't require trailing newlines.
+    int decoded_byte_index = 0;   //Index where the next base64_decoded byte should be written.
+    while ( 0 < BIO_read(b64_bio, base64_decoded+decoded_byte_index, 1) ){ //Read byte-by-byte.
+        decoded_byte_index++; //Increment the index until read of BIO decoded data is complete.
+    } //Once we're done reading decoded data, BIO_read returns -1 even though there's no error.
+    BIO_free_all(b64_bio);  //Destroys all BIOs in chain, starting with b64 (i.e. the 1st one).
+    return base64_decoded;        //Returns base-64 decoded data with trailing null terminator.
+}
 
-	for(size_t i = 0, j = 0; i < L; i += 4)
-	{
-		int n = B64index[p[i]] << 18 | 
-						B64index[p[i + 1]] << 12 | 
-						B64index[p[i + 2]] << 6 | 
-						B64index[p[i + 3]];
-
-		str[j++] = n >> 16;
-		str[j++] = n >> 8 & 0xFF;
-		str[j++] = n & 0xFF;
-	}
-
-	if (pad)
-	{
-		int n = B64index[p[L]] << 18 |
-						B64index[p[L + 1]] << 12;
-		str[str_size - 1] = n >> 16;
-
-		if (len > L + 2 && p[L + 2] != '=')
-		{
-			n |= B64index[p[L + 2]] << 6;
-			str[str_size + 1] = (n >> 8 & 0xFF);
-		}
-	}
-
-	return str;
-} 
