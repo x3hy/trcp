@@ -29,9 +29,9 @@ server = []
 
 @app.route("/p/<username>/<time>/<message>")
 def post(username, time, message):
-    username = str(uri_b64decode(username))
-    time = str(uri_b64decode(time))
-    message = str(uri_b64decode(message))
+    username = uri_b64decode(username).decode()
+    time = uri_b64decode(time).decode()
+    message = uri_b64decode(message).decode()
 
     print(f"username: {username}\ntime: {time}\nmsg: {message}")
     
