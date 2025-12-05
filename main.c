@@ -23,7 +23,10 @@ typedef struct {
 	struct {
 		char *ip;
 		int port;
-		char *endpoint;
+		struct {
+			char *GET;
+			char *POST;
+		} endpoint;
 	} server;
 	char *username;
 } app_config;
@@ -63,7 +66,8 @@ main()
 	base.username = strdup("tes123");
 	base.server.ip = strdup("http://127.0.0.1");
 	base.server.port = 8911;
-	base.server.endpoint = strdup("p");
+	base.server.endpoint.POST = strdup("p");
+	base.server.endpoint.GET = strdup("g");
 
 	// Init message
 	message test = msg_init("test123");
@@ -143,14 +147,14 @@ server_url(app_config app)
 	size_t out_s = snprintf(NULL, 0, "%s:%d/%s",
 			app.server.ip,
 			app.server.port,
-			app.server.endpoint);
+			app.server.endpoint.POST);
 
 	out = malloc(out_s + 1);
 
 	snprintf(out, out_s + 1, "%s:%d/%s", 
 			app.server.ip,
 			app.server.port,
-			app.server.endpoint);
+			app.server.endpoint.POST);
 
 	return out;
 }
@@ -196,7 +200,8 @@ free_app_config(app_config app)
 {
 	free(app.username);
 	free(app.server.ip);
-	free(app.server.endpoint);
+	free(app.server.endpoint.GET);
+	free(app.server.endpoint.POST);
 }
 
 

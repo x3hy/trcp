@@ -18,13 +18,25 @@ def resp(msg, code):
 app = flask.Flask(__name__)
 CORS = flask_cors.CORS(app)
 
-users = []
-server = {}
+server = []
 
 @app.route("/p/<username>/<time>/<message>")
 def post(username, time, message):
     print(f"username: {username}\ntime: {time}\nmsg: {message}")
+    
+    message = {
+            "username": username,
+            "time_sent": time,
+            "message": message,
+            "time_valid": get_iso_time()
+            }
+    
+    server.push(message);
     return resp("posted",200);
+
+@app.route("/g")
+def get_server_data():
+    return flask.jsonify(server);
 
 if __name__ == "__main__":
     app.run(port = 8911, host="0.0.0.0")
