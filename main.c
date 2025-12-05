@@ -71,7 +71,7 @@ main()
   // Init message
   message test = msg_init("this is from the client.!");
 
-  msg_return ret = post_msg(test);
+  msg_return ret = post_msg(test, base);
   printf("msg: %s\ncode: %d\n", ret.message, ret.code);
 
   free(ret.message);
