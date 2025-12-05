@@ -76,9 +76,10 @@ main()
 
   free(ret.message);
 
+	/*
 	char *get_n_url = server_url_at_point(base, base.server.endpoint.GET2);
 
-	
+		
 	while(1)
 	{
 		cJSON *resp = get_url_json(get_n_url);
@@ -94,11 +95,9 @@ main()
 		sleep(5);
 	}
 
-
-
-
 	free(get_n_url);
-  
+  */ 
+
 	// Clean up
   msg_free(&test);
 	
