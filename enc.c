@@ -3,9 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-unsigned char *encrypt_message(const unsigned char *key_32bytes,
-                               const unsigned char *plaintext,
-                               size_t plaintext_len, size_t *out_len) {
+unsigned char *encrypt_message(const unsigned char *key_32bytes, const unsigned char *plaintext, size_t plaintext_len, size_t *out_len) {
   unsigned char nonce[12];
   RAND_bytes(nonce, 12);
 
