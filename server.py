@@ -31,7 +31,7 @@ def post(username, time, message):
             "time_valid": get_iso_time()
             }
     
-    server.push(message);
+    server.append(message);
     return resp("posted",200);
 
 @app.route("/g")
