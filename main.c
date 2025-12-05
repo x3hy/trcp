@@ -68,7 +68,7 @@ main(int argc, char * argv[])
 {
 	pl_arg *p_help = PL_A("--help", "Show this dialog", .short_flag = "-h");
 	pl_arg *p_user = PL_A("--username","Set username", .takes_value = 1, .short_flag = "-u",  .required = 1);
-	pl_arg *p_ip = PL_A("--host", "Set host", .takes_value = 1, .short_flag = "-h", .required = 1);
+	pl_arg *p_ip = PL_A("--host", "Set host", .takes_value = 1, .short_flag = "-i", .required = 1);
 	pl_arg *p_port = PL_A("--port", "Set port", .takes_value = 1, .short_flag = "-p", .required = 1);
 	pl_r plib_r;
 
