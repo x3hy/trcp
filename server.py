@@ -42,8 +42,8 @@ def post(username, time, message):
             "message": message,
             "time_valid": get_iso_time()}
 
-    server += message
-    return resp("liar", 200)
+    server.append(message)
+    return resp("message posted", 200)
 
 
 @app.route("/g")
