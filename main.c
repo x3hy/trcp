@@ -76,7 +76,7 @@ main()
 
   free(ret.message);
 
-	char *get_n_url = server_url(base);
+	char *get_n_url = server_url_at_point(base, base.server.endpoint.GET2);
 
 	while(1)
 	{
