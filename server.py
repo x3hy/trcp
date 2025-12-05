@@ -42,7 +42,7 @@ def post(username, time, message):
             "message": message,
             "time_valid": get_iso_time()}
 
-    server.append(message)
+    server += message
     return resp("liar", 200)
 
 
@@ -53,6 +53,7 @@ def get_server_data():
 
 @app.route("/n")
 def get_server_n():
+    print(server)
     return resp(len(server), 200)
 
 
