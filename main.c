@@ -1,4 +1,5 @@
 #include "remote/cjson/cJSON.h"
+#include "remote/plib/plib.h"
 #include <curl/curl.h>
 #include <openssl/pem.h>
 #include <stddef.h>
@@ -8,6 +9,7 @@
 #include <time.h>
 #include <pthread.h>
 #include <unistd.h>
+#include <termios.h>
 
 typedef struct {
   char *time;
@@ -51,6 +53,7 @@ static size_t write_callback(void *, size_t, size_t, void *);
 static cJSON *get_url_json(const char *);
 static msg_return post_msg(message, app_config);
 static char * server_url_at_point(app_config, char*);
+static void message_listen_loop(app_config);
 
 static app_config base;
 
@@ -58,12 +61,28 @@ static app_config base;
 #define b64d(c) base64_decode((unsigned char *)c, strlen(c))
 
 int
-main()
+main(int argc, char * argv[])
 {
+	pl_arg *p_user = PL_A("--username","Set username", .takes_value = 1, .short_flag = "-u",  .required = 1);
+	pl_arg *p_ip = PL_A("--host", "Set host", .takes_value = 1, .short_flag = "-h", .required = 1);
+	pl_arg *p_port = PL_A("--port", "Set port", .takes_value = 1, .short_flag = "-p", .required = 1);
+	pl_r plib_r;
+
+	if((plib_r = PL_PROC()) != PL_SUCCESS){
+		PL_E_INFO(plib_r);
+	}
+
+	if(base.server.port == 0 && strcmp(PL_G(p_port), "0") != 0)
+	{
+		fprintf(stderr, "Port '%s' is invalid..\n", PL_G(p_port));
+		return 1;
+	}
+	
+	base.username = strdup(PL_G(p_user));
+	base.server.ip = strdup(PL_G(p_ip));
+	base.server.port = atoi(PL_G(p_port));
+
   // Init app
-  base.username = strdup("tes123");
-  base.server.ip = strdup("http://127.0.0.1");
-  base.server.port = 8911;
   base.server.endpoint.POST = strdup("p");
   base.server.endpoint.GET = strdup("g");
 	base.server.endpoint.GET2 = strdup("n");
@@ -76,27 +95,6 @@ main()
 
   free(ret.message);
 
-	/*
-	char *get_n_url = server_url_at_point(base, base.server.endpoint.GET2);
-
-		
-	while(1)
-	{
-		cJSON *resp = get_url_json(get_n_url);
-		cJSON *msg = cJSON_GetObjectItemCaseSensitive(resp, "message");
-		const int count = msg->valueint;
-		printf("count: %d\n", count);
-
-		fflush(stdout);
-
-		if(count >= 10)
-			break;
-		
-		sleep(5);
-	}
-
-	free(get_n_url);
-  */ 
 
 	// Clean up
   msg_free(&test);
@@ -245,6 +243,23 @@ msg_url(message msg, app_config app)
   free(msg_message);
   return out;
 }
+
+
+// await a new message
+static void 
+message_listen_loop(app_config app)
+{
+	char *get_n_url = server_url_at_point(app, app.server.endpoint.GET2);
+	while(1)
+	{
+		cJSON *resp = get_url_json(get_n_url);
+		cJSON *msg = cJSON_GetObjectItemCaseSensitive(resp, "message");
+		const int count = msg->valueint;
+	}
+
+	free(get_n_url);
+}
+
 
 // Free app_config memory
 static void
@@ -423,4 +438,16 @@ post_msg(message msg, app_config app)
   free(url);
 
   return out;
+}
+
+
+int achar(){
+	static struct termios oldt, newt;
+	tcgetattr(STDIN_FILENO,&oldt);
+	newt=oldt;
+	newt.c_lflag &= ~(ICANON | ECHO);
+	tcsetattr(STDIN_FILENO,TCSANOW,&newt);
+	int ch=getchar();
+	tcsetattr(STDIN_FILENO,TCSANOW,&oldt);
+	return ch;
 }
