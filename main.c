@@ -1,4 +1,5 @@
 #include "remote/cjson/cJSON.h"
+#include "remote/plib/lib/input.h"
 #include "remote/plib/plib.h"
 #include <curl/curl.h>
 #include <openssl/pem.h>
@@ -27,9 +28,15 @@ typedef struct {
     char *ip;
     int port;
     struct {
-      char *GET;
-			char *GET2;
-      char *POST;
+			struct {
+				char *msg_count;
+				char *msg;
+				char *ping;
+			} GET;
+			struct {
+				char *msg;
+				char *user_check;
+			} POST;
     } endpoint;
   } server;
   char *username;
@@ -85,34 +92,17 @@ main(int argc, char * argv[])
 		return 1;
 	}
 	
+  // Init app
 	base.username = strdup(PL_G(p_user));
 	base.server.ip = strdup(PL_G(p_ip));
 	base.server.port = atoi(PL_G(p_port));
+  base.server.endpoint.POST.msg = strdup("post_msg");
+	base.server.endpoint.POST.user_check = strdup("user_check");
+  base.server.endpoint.GET.msg = strdup("get_msg");
+	base.server.endpoint.GET.msg_count = strdup("msg_count");
+	base.server.endpoint.GET.ping = strdup("ping");
 
-  // Init app
-  base.server.endpoint.POST = strdup("p");
-  base.server.endpoint.GET = strdup("g");
-	base.server.endpoint.GET2 = strdup("n");
-
-  // Init message
-  message test = msg_init("this is from the client.!");
-
-  msg_return ret = post_msg(test, base);
-  printf("msg: %s\ncode: %d\n", ret.message, ret.code);
-
-  free(ret.message);
-
-
-	// Clean up
-  msg_free(&test);
-	
-	free(base.username);
-
-	free(base.server.ip);
-	free(base.server.endpoint.POST);
-	free(base.server.endpoint.GET);
-	free(base.server.endpoint.GET2);
-  
+	// Clean up 
 	return 0;
 }
 
@@ -256,7 +246,7 @@ msg_url(message msg, app_config app)
 static void 
 message_listen_loop(app_config app)
 {
-	char *get_n_url = server_url_at_point(app, app.server.endpoint.GET2);
+	char *get_n_url = server_url_at_point(app, app.server.endpoint.GET.msg_count);
 	while(1)
 	{
 		cJSON *resp = get_url_json(get_n_url);
@@ -272,10 +262,13 @@ message_listen_loop(app_config app)
 static void
 free_app_config(app_config app)
 {
-  free(app.username);
-  free(app.server.ip);
-  free(app.server.endpoint.GET);
-  free(app.server.endpoint.POST);
+	free(app.username);
+	free(app.server.ip);
+	free(app.server.endpoint.POST.msg);
+	free(app.server.endpoint.POST.user_check);
+	free(app.server.endpoint.GET.msg);
+	free(app.server.endpoint.GET.msg_count);
+	free(app.server.endpoint.GET.ping);
 }
 
 static char *
