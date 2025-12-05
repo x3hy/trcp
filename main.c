@@ -55,14 +55,18 @@ static msg_return post_msg(message, app_config);
 static char * server_url_at_point(app_config, char*);
 static void message_listen_loop(app_config);
 
+
 static app_config base;
+
 
 #define b64e(c) base64_encode((unsigned char *)c, strlen(c))
 #define b64d(c) base64_decode((unsigned char *)c, strlen(c))
 
+
 int
 main(int argc, char * argv[])
 {
+	pl_arg *p_help = PL_A("--help", "Show this dialog", .short_flag = "-h");
 	pl_arg *p_user = PL_A("--username","Set username", .takes_value = 1, .short_flag = "-u",  .required = 1);
 	pl_arg *p_ip = PL_A("--host", "Set host", .takes_value = 1, .short_flag = "-h", .required = 1);
 	pl_arg *p_port = PL_A("--port", "Set port", .takes_value = 1, .short_flag = "-p", .required = 1);
@@ -70,6 +74,7 @@ main(int argc, char * argv[])
 
 	if((plib_r = PL_PROC()) != PL_SUCCESS){
 		PL_E_INFO(plib_r);
+		pl_help();
 		return 1;
 	}
 
