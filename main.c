@@ -46,8 +46,8 @@ main()
 	// Init app 
 	base.username = strdup("tes123");
 	base.server.ip = strdup("http://127.0.0.1");
-	base.server.port = 5511;
-	base.server.endpoint = strdup("msg");
+	base.server.port = 8911;
+	base.server.endpoint = strdup("p");
 
 	// Init message
 	message test = msg_init("test123");

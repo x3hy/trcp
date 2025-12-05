@@ -4,32 +4,20 @@ import string
 import random 
 import datetime 
 
+
+def get_iso_time():
+    return datetime.now(datetime.timezone.utc).isoformat()
+
+
 app = flask.Flask(__name__)
 CORS = flask_cors.CORS(app)
-
-new_message = {
-    "time_send":,
-    "time_validated":,
-    "message":,
-    "user":"",
-}
 
 users = []
 server = {}
 
-@app.route("/p/<message>", methods=["POST"])
-def post(message):
-    user = message["user"];
-    if user not in users:
-        res = {
-            "status": 404,
-            "message": "ERROR_USER_NOT_EXIST"
-        }
-
-        return flask.jsonify(res), 404
-
-    message["time_validated"] = datetime.now();
-    message[""]
+@app.route("/p/<username>/<time>/<message>", methods=["POST"])
+def post(username, time, message):
+    printf(f"username: {username}\ntime: {time}\nmsg: {message}")
     return "message_posted", 200
 
 if __name__ == "__main__":
