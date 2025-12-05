@@ -76,15 +76,20 @@ main()
 
   free(ret.message);
 
-	/*
 	char *get_n_url = server_url_at_point(base, base.server.endpoint.GET2);
 
 	
 	while(1)
 	{
 		cJSON *resp = get_url_json(get_n_url);
-		printf("count: %s\n", resp->valuestring);
+		cJSON *msg = cJSON_GetObjectItemCaseSensitive(resp, "message");
+		const int count = msg->valueint;
+		printf("count: %d\n", count);
+
 		fflush(stdout);
+
+		if(count >= 5)
+			break;
 		
 		sleep(5);
 	}
@@ -93,9 +98,8 @@ main()
 
 
 	free(get_n_url);
-
-	*/
-  // Clean up
+  
+	// Clean up
   msg_free(&test);
 	
 	free(base.username);
