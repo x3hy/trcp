@@ -55,11 +55,11 @@ main()
 
 	free(url);
 	
-	char* base64 = base64_encode((const unsigned char *)"test123", 8);
+	char* base64 = base64_encode("test123", strlen("test123"));
 	printf("%s\n",base64);
 	free(base64);
 
-	char *decoded_base64 = base64_decode((unsigned char *)base64, strlen(base64)); 
+	char *decoded_base64 = base64_decode(base64, strlen(base64)); 
 	
 	printf("%s\n", decoded_base64);
 	free(decoded_base64);
