@@ -29,8 +29,8 @@ static void msg_free(message *);
 static char *msg_url(message); 
 static char *server_url(app_config);
 static void free_app_config(app_config);
-static char *base64_encode (const void *, size_t);
-static char *base64_decode (const void *, size_t);
+static char *base64_encode(const unsigned char *, size_t);
+static char *base64_decode(const char *, size_t *);
 
 
 static app_config base;
@@ -179,7 +179,7 @@ free_app_config(app_config app)
 }
 
 
-char *base64url_encode(const unsigned char *data, size_t input_length) {
+char *base64_encode(const unsigned char *data, size_t input_length) {
     BIO *b64 = BIO_new(BIO_f_base64());
     BIO *bio = BIO_new(BIO_s_mem());
     BUF_MEM *buffer_ptr;
@@ -208,7 +208,7 @@ char *base64url_encode(const unsigned char *data, size_t input_length) {
     return url_safe; // Remember to free() when done!
 }
 
-char *base64url_decode(const char *input, size_t *out_len) {
+char *base64_decode(const char *input, size_t *out_len) {
     size_t len = strlen(input);
     char *clean_input = malloc(len + 4);
 
