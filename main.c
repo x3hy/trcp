@@ -166,7 +166,8 @@ main(int argc, char * argv[])
 			if(idx <= MSG_SIZE)
 				msg[idx++] = global_in.buf;
 		}
-		printf("enter: %d\n", global_in.buf);
+		if(global_in.buf == '\n')
+			printf("enter pressed\n");
 		//ui_update();
 	}
 	
