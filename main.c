@@ -62,9 +62,11 @@ static cJSON *get_url_json(const char *);
 static msg_return post_msg(message, app_config);
 static char * server_url_at_point(app_config, char*);
 static void message_listen_loop(app_config);
+static void ui_update(void);
 
 
 static app_config base;
+input global_in;
 
 
 #define b64e(c) base64_encode((unsigned char *)c, strlen(c))
@@ -110,7 +112,13 @@ main(int argc, char * argv[])
 	hide_cursor();
 	fflush(stdout);
 
-	sleep(3);
+	// app is initialized!
+	in_loop()
+	{
+		in_catch(&global_in);
+		in_update(&global_in);
+		ui_update();
+	}
 	
 
 	// Clean up 
@@ -123,6 +131,13 @@ main(int argc, char * argv[])
 	return 0;
 }
 
+static void 
+ui_update(void)
+{
+	border b = UI_BORDER("-", "|", "+");
+	box view = UI_BOX(VEC(0,0), VEC(30,30), .ansi = "", .border = b, .fill = ' ');
+	UI_BOX_DRAW(view);
+}
 
 // Returns UTC ISO date
 static char
@@ -238,7 +253,7 @@ msg_url(message msg, app_config app)
   char *serv = server_url(base);
   size_t out_s = snprintf(NULL, 0, "%s/%s/%s/%s/%s", 
 			serv, 
-			app.server.endpoint.POST, 
+			app.server.endpoint.POST.msg, 
 			msg_username, 
 			msg_time,
       msg_message);
@@ -247,7 +262,7 @@ msg_url(message msg, app_config app)
 
   snprintf(out, out_s + 1, "%s/%s/%s/%s/%s", 
 			serv, 
-			app.server.endpoint.POST, 
+			app.server.endpoint.POST.msg, 
 			msg_username, 
 			msg_time,
       msg_message);
