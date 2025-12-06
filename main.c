@@ -12,6 +12,7 @@
 #include <pthread.h>
 #include <unistd.h>
 #include <termios.h>
+#include <signal.h>
 
 typedef struct {
   char *time;
@@ -72,10 +73,26 @@ input global_in;
 #define b64e(c) base64_encode((unsigned char *)c, strlen(c))
 #define b64d(c) base64_decode((unsigned char *)c, strlen(c))
 
+// quit handler
+void 
+quit(int a)
+{
+	_in_no_raw();
+	disable_mouse_reporting_ansi();
+	deactivate_terminal_buffer();
+	show_cursor();
+	
+	free_app_config(base);
+	fflush(stdout);
+
+	exit(a);
+}
+
 
 int
 main(int argc, char * argv[])
 {
+	signal(SIGINT, quit);
 	pl_arg *p_help = PL_A("--help", "Show this dialog", .short_flag = "-h");
 	pl_arg *p_user = PL_A("--username","Set username", .takes_value = 1, .short_flag = "-u",  .required = 1);
 	pl_arg *p_ip = PL_A("--host", "Set host", .takes_value = 1, .short_flag = "-i", .required = 1);
@@ -122,12 +139,6 @@ main(int argc, char * argv[])
 	
 
 	// Clean up 
-	_in_no_raw();
-	disable_mouse_reporting_ansi();
-	deactivate_terminal_buffer();
-	show_cursor();
-	
-	free_app_config(base);
 	return 0;
 }
 
@@ -137,6 +148,7 @@ ui_update(void)
 	border b = UI_BORDER("-", "|", "+");
 	box view = UI_BOX(VEC(0,0), VEC(30,30), .ansi = "", .border = b, .fill = ' ');
 	UI_BOX_DRAW(view);
+	fflush(stdout);
 }
 
 // Returns UTC ISO date
@@ -443,7 +455,6 @@ get_url_json(const char *url)
   curl_global_cleanup();
   free(chunk.mem);
 
-  // Use cJSON_Delete(root) when done
   return root;
 }
 
