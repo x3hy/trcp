@@ -152,7 +152,6 @@ main(int argc, char * argv[])
 		// handle text input  
 		if(global_in.type == KEY)
 		{
-			if(key )
 		}
 	}
 	
