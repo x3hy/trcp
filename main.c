@@ -162,15 +162,12 @@ main(int argc, char * argv[])
 				idx-=1;
 			}
 
-			if(global_in.buf == 10)
-			{
-				printf("enter\n");
-			}
+			printf("enter: %d\n", global_in.buf);
 			
 			if(idx <= MSG_SIZE)
 				msg[idx++] = global_in.buf;
 		}
-		ui_update();
+		//ui_update();
 	}
 	
 	quit(0);
