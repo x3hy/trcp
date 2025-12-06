@@ -13,6 +13,7 @@
 #include <unistd.h>
 #include <termios.h>
 #include <signal.h>
+#include <sys/ioctl.h>
 
 typedef struct {
   char *time;
@@ -152,11 +153,14 @@ main(int argc, char * argv[])
 static void 
 ui_update(void)
 {
+	struct winsize s;
+  ioctl(STDOUT_FILENO, TIOCGWINSZ, &s);
+	
 	clear();
 	gotoxy(1, 1);
 	
 	border b = UI_BORDER("-", "|", "+");
-	box view = UI_BOX(VEC(30,30), VEC(1, 1), .ansi = "", .border = b, .fill = ' ');
+	box view = UI_BOX(VEC(30,30), VEC(s.ws_col, s.ws_row), .ansi = "", .border = b, .fill = ' ');
 	
 	printf("%s\033[0m",view._r);
 	fflush(stdout);
