@@ -135,7 +135,7 @@ main(int argc, char * argv[])
 	hide_cursor();
 	fflush(stdout);
 
-	in_key('a', quit_callback);
+	in_key('Q', quit_callback);
 	
 	// app is initialized!
 	in_loop()
