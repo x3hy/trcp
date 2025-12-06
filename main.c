@@ -162,7 +162,8 @@ main(int argc, char * argv[])
 				idx-=1;
 			}
 
-			if(global.buf == 10){
+			if(global_in.buf == 10)
+			{
 				printf("enter\n");
 			}
 			
