@@ -108,6 +108,7 @@ main(int argc, char * argv[])
 	enable_mouse_reporting_ansi();
 	activate_terminal_buffer();
 	hide_cursor();
+	fflush(stdout);
 
 	sleep(3);
 	
