@@ -15,6 +15,10 @@
 #include <signal.h>
 #include <sys/ioctl.h>
 
+// largest message size
+// 127 characters
+#define MSG_SIZE 128 
+
 typedef struct {
   char *time;
   char *message;
@@ -144,6 +148,12 @@ main(int argc, char * argv[])
 		in_catch(&global_in);
 		in_update(&global_in);
 		ui_update();
+		
+		// handle text input  
+		if(global_in.type == KEY)
+		{
+			if(key )
+		}
 	}
 	
 	// Clean up 
@@ -159,12 +169,21 @@ ui_update(void)
 	clear();
 	gotoxy(1, 1);
 	
-	border b = UI_BORDER("-", "|", "+");
+	border b = (border){
+		.top = "━",
+		.bottom = "━",
+		.left = "┃",
+		.right = "┃",
+		.top_right = "┓",
+		.top_left = "┏",
+		.bottom_right = "┛",
+		.bottom_left = "┗"
+	};
+
 	box view = UI_BOX(VEC(s.ws_col, s.ws_row-1), VEC(0, 0), .ansi = "", .border = b, .fill = ' ');
 	
 	printf("%s\033[0m\n",view._r);
 	printf(":prompt goes here");
-
 
 	fflush(stdout);
 }
