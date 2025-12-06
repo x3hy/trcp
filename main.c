@@ -152,11 +152,14 @@ main(int argc, char * argv[])
 static void 
 ui_update(void)
 {
+	clear();
+	gotoxy(1, 1);
+	
 	border b = UI_BORDER("-", "|", "+");
-	box view = UI_BOX(VEC(0,0), VEC(30,30), .ansi = "", .border = b, .fill = ' ');
+	box view = UI_BOX(VEC(0,0), VEC(30,30), .ansi = "\033[0m", .border = b, .fill = 'A');
+	
 	UI_BOX_DRAW(view);
 	fflush(stdout);
-	printf("test");
 }
 
 // Returns UTC ISO date
