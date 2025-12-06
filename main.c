@@ -160,7 +160,7 @@ ui_update(void)
 	gotoxy(1, 1);
 	
 	border b = UI_BORDER("-", "|", "+");
-	box view = UI_BOX(VEC(s.ws_col,s.ws_row), VEC(1, 1), .ansi = "", .border = b, .fill = ' ');
+	box view = UI_BOX(VEC(s.ws_col -1, s.ws_row -1), VEC(1, 1), .ansi = "", .border = b, .fill = ' ');
 	
 	printf("%s\033[0m",view._r);
 	fflush(stdout);
