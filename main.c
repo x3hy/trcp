@@ -145,7 +145,6 @@ main(int argc, char * argv[])
 		ui_update();
 	}
 	
-
 	// Clean up 
 	return 0;
 }
@@ -157,6 +156,7 @@ ui_update(void)
 	box view = UI_BOX(VEC(0,0), VEC(30,30), .ansi = "", .border = b, .fill = ' ');
 	UI_BOX_DRAW(view);
 	fflush(stdout);
+	printf("test");
 }
 
 // Returns UTC ISO date
