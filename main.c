@@ -176,7 +176,8 @@ ui_update(void)
 		.top_right = "┓",
 		.top_left = "┏",
 		.bottom_right = "┛",
-		.bottom_left = "┗"
+		.bottom_left = "┗",
+		.ansi = "",
 	};
 
 	box view = UI_BOX(VEC(s.ws_col, s.ws_row-1), VEC(0, 0), .ansi = "", .border = b, .fill = ' ');
