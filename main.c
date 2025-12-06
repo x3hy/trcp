@@ -73,6 +73,8 @@ static void ui_update(void);
 
 static app_config base;
 input global_in;
+char *msg;
+int idx = 0;
 
 
 #define b64e(c) base64_encode((unsigned char *)c, strlen(c))
@@ -132,6 +134,7 @@ main(int argc, char * argv[])
   base.server.endpoint.GET.msg = strdup("get_msg");
 	base.server.endpoint.GET.msg_count = strdup("msg_count");
 	base.server.endpoint.GET.ping = strdup("ping");
+	msg = malloc(MSG_SIZE);
 	
 	// Enable misc ANSI
 	_in_raw();
@@ -147,16 +150,24 @@ main(int argc, char * argv[])
 	{
 		in_catch(&global_in);
 		in_update(&global_in);
-		ui_update();
 		
 		// handle text input  
 		if(global_in.type == KEY)
 		{
+			// Backspace
+
+			if(global_in.buf == 127 && idx > 1){
+				msg[idx--] = '\0';
+				idx-=1;
+			}
+			
+			if(idx <= MSG_SIZE)
+				msg[idx++] = global_in.buf;
 		}
+		ui_update();
 	}
 	
-	// Clean up 
-	return 0;
+	quit(0);
 }
 
 static void 
@@ -183,7 +194,7 @@ ui_update(void)
 	box view = UI_BOX(VEC(s.ws_col, s.ws_row-1), VEC(0, 0), .ansi = "", .border = b, .fill = ' ');
 	
 	printf("%s\033[0m\n",view._r);
-	printf(":prompt goes here");
+	printf(":%s", msg);
 
 	fflush(stdout);
 }
