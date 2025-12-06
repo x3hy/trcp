@@ -88,6 +88,12 @@ quit(int a)
 	exit(a);
 }
 
+void 
+quit_callback(void *a)
+{
+	quit(0);
+}
+
 
 int
 main(int argc, char * argv[])
@@ -129,6 +135,8 @@ main(int argc, char * argv[])
 	hide_cursor();
 	fflush(stdout);
 
+	in_key('A', quit_callback);
+	
 	// app is initialized!
 	in_loop()
 	{
