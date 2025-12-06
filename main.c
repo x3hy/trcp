@@ -156,9 +156,14 @@ main(int argc, char * argv[])
 		{
 			// Backspace
 
-			if(global_in.buf == 127 && idx > 1){
+			if(global_in.buf == 127 && idx > 1)
+			{
 				msg[idx--] = '\0';
 				idx-=1;
+			}
+
+			if(global.buf == 10){
+				printf("enter\n");
 			}
 			
 			if(idx <= MSG_SIZE)
@@ -193,7 +198,7 @@ ui_update(void)
 
 	box view = UI_BOX(VEC(s.ws_col, s.ws_row-1), VEC(0, 0), .ansi = "", .border = b, .fill = ' ');
 	
-	//printf("%s\033[0m\n",view._r);
+	printf("%s\033[0m\n",view._r);
 
 	gotoxy(0, s.ws_row);
 	printf(":%s", msg);
