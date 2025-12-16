@@ -35,15 +35,15 @@ typedef struct {
     char *ip;
     int port;
     struct {
-			struct {
-				char *msg_count;
-				char *msg;
-				char *ping;
-			} GET;
-			struct {
-				char *msg;
-				char *user_check;
-			} POST;
+		struct {
+			char *msg_count;
+			char *msg;
+			char *ping;
+		} GET;
+		struct {
+			char *msg;
+			char *user_check;
+		} POST;
     } endpoint;
   } server;
   char *username;
@@ -89,7 +89,6 @@ quit(int a)
 	deactivate_terminal_buffer();
 	show_cursor();
 	fflush(stdout);
-	
 	free_app_config(base);
 
 	exit(a);
@@ -144,33 +143,12 @@ main(int argc, char * argv[])
 	hide_cursor();
 	fflush(stdout);
 
-	in_key('Q', quit_callback);
-	
-	// app is initialized!
-	in_loop()
-	{
-		in_catch(&global_in);
-		in_update(&global_in);
-		
-		// handle text input  
-		if(global_in.type == KEY)
-		{
-			// Backspace
-
-			if(global_in.buf == 127 && idx > 1)
-			{
-				msg[idx--] = '\0';
-				idx-=1;
-			}
-
-			if(idx <= MSG_SIZE)
-				msg[idx++] = global_in.buf;
-		}
-		if(global_in.buf == '\n')
-			printf("enter pressed\n");
-		//ui_update();
+	int c;
+	while(1){
+		c = achar();
+		printf("%d\n", c);
 	}
-	
+
 	quit(0);
 }
 
