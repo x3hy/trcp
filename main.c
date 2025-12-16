@@ -156,9 +156,9 @@ main(int argc, char * argv[])
 			msg[idx++] = '\0';
 			message new_msg = msg_init(msg);
 			msg_url(new_msg, base);
-			post_msg(new_msg);
+			post_msg(new_msg, base);
 
-			msg_free(new_msg);
+			msg_free(&new_msg);
 			
 		} else 
 		if(strlen(msg) < MSG_SIZE){
