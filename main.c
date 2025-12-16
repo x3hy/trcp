@@ -147,7 +147,15 @@ main(int argc, char * argv[])
 	int c;
 	while(1){
 		c = achar();
-		printf("%d\n", c);
+		
+		if(c == 127){
+			msg[idx--] = '\0'; 
+		}else 
+		if(strlen(msg) < MSG_SIZE){
+			msg[idx++] = (char)c;
+		}
+
+		ui_update();
 	}
 
 	quit(0);
