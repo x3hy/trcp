@@ -149,7 +149,8 @@ main(int argc, char * argv[])
 		c = achar();
 		
 		if(c == 127){
-			msg[idx--] = '\0'; 
+			if(idx >= MSG_SIZE)
+				msg[idx--] = '\0'; 
 		} else 
 		if (c == 10){
 			// send message 
@@ -157,10 +158,8 @@ main(int argc, char * argv[])
 			message new_msg = msg_init(msg);
 			msg_url(new_msg, base);
 			post_msg(new_msg, base);
-
 			msg_free(&new_msg);
 			msg[0] = '\0';
-			ui_update();
 			
 		} else 
 		if(strlen(msg) < MSG_SIZE){
