@@ -69,6 +69,7 @@ static msg_return post_msg(message, app_config);
 static char * server_url_at_point(app_config, char*);
 static void message_listen_loop(app_config);
 static void ui_update(void);
+static int achar(void);
 
 
 static app_config base;
