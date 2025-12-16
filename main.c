@@ -150,10 +150,20 @@ main(int argc, char * argv[])
 		
 		if(c == 127){
 			msg[idx--] = '\0'; 
-		}else 
+		} else 
+		if (c == 10){
+			// send message 
+			msg[idx++] = '\0';
+			message new_msg = msg_init(msg);
+			msg_url(new_msg, base);
+			post_msg(new_msg);
+
+			msg_free(new_msg);
+			
+		} else 
 		if(strlen(msg) < MSG_SIZE){
 			msg[idx++] = (char)c;
-		}
+		} 
 
 		ui_update();
 	}
