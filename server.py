@@ -28,7 +28,7 @@ CORS = flask_cors.CORS(app)
 server = []
 
 # http://example.com/p/my_us/ername/thetime/my message
-@app.route("/p/<username>/<time>/<message>")
+@app.route("/post_msg/<username>/<time>/<message>")
 def post(username, time, message):
     username = uri_b64decode(username).decode()
     time = uri_b64decode(time).decode()
@@ -46,12 +46,12 @@ def post(username, time, message):
     return resp("message posted", 200)
 
 
-@app.route("/g")
+@app.route("/get_msg")
 def get_server_data():
     return flask.jsonify(server)
 
 
-@app.route("/n")
+@app.route("/msg_count")
 def get_server_n():
     print(server)
     return resp(len(server), 200)
