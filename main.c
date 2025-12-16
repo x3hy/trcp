@@ -159,6 +159,8 @@ main(int argc, char * argv[])
 			post_msg(new_msg, base);
 
 			msg_free(&new_msg);
+			msg[0] = '\0';
+			ui_update();
 			
 		} else 
 		if(strlen(msg) < MSG_SIZE){
