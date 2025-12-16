@@ -88,9 +88,9 @@ quit(int a)
 	disable_mouse_reporting_ansi();
 	deactivate_terminal_buffer();
 	show_cursor();
+	fflush(stdout);
 	
 	free_app_config(base);
-	fflush(stdout);
 
 	exit(a);
 }
@@ -125,19 +125,20 @@ main(int argc, char * argv[])
 		return 1;
 	}
 	
-  // Init app (point of no return)
+	// Init app (point of no return)
 	base.username = strdup(PL_G(p_user));
 	base.server.ip = strdup(PL_G(p_ip));
 	base.server.port = atoi(PL_G(p_port));
-  base.server.endpoint.POST.msg = strdup("post_msg");
+	base.server.endpoint.POST.msg = strdup("post_msg");
 	base.server.endpoint.POST.user_check = strdup("user_check");
-  base.server.endpoint.GET.msg = strdup("get_msg");
+	base.server.endpoint.GET.msg = strdup("get_msg");
 	base.server.endpoint.GET.msg_count = strdup("msg_count");
 	base.server.endpoint.GET.ping = strdup("ping");
 	msg = malloc(MSG_SIZE);
 	
 	// Enable misc ANSI
 	_in_raw();
+	
 	enable_mouse_reporting_ansi();
 	activate_terminal_buffer();
 	hide_cursor();
@@ -162,7 +163,6 @@ main(int argc, char * argv[])
 				idx-=1;
 			}
 
-			
 			if(idx <= MSG_SIZE)
 				msg[idx++] = global_in.buf;
 		}
