@@ -6,7 +6,7 @@
 #include <signal.h>
 
 #include "remote/plib/lib/ansi.h"
-#include "remote/plib/lib/input.c"
+#include "remote/plib/lib/input.h"
 
 // Variables
 static char *buffer;
