@@ -9,10 +9,6 @@ CFLAGS := -g -DVERSION=$(VER)
 src/config.h: src/config.def.h
 	cat $^ > $@
 
-# Build the chat client
-trchat: trchat.o commit src/config.h
-	$(CC) $(CFLAGS) $(firstword $^) -o $@
-
 # Build the server
 trcp: trcp.o src/config.h
 	$(CC) $(CFLAGS) $(firstword $^) -o $@
@@ -38,9 +34,5 @@ install: trchat trcp
 start: clean trcp
 	@echo ""
 	./$(lastword $^)  --port=$(PORT) $(UID)
-
-# Start the chat
-chat: trchat
-	./$^ --port=$(PORT) --addr=http://localhost $(UID)
 
 .PHONY: clean commit

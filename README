@@ -6,11 +6,9 @@ as long as it can be represented in text form.
 
 TRCP was made to be a quick n' dirty webserver that you can start up whenever.
 TRCP is universal and its up to the client to decide how data is parsed and
-managed. This repo also contains trchat, an encrypted chat program that can
-communicate over a TRCP server. TRChat has end-to-end encryption and is a
-fully text-based program.
+managed.
 
-Both of these programs are meant to be as small and lightweight as possible
+This  program are meant to be as small and lightweight as possible
 whist allowing for quick setup and deployment. They follow a suckless
 philosophy.
 ---
@@ -23,10 +21,7 @@ cd trcp
 # start the server (blocking):
 make start
 
-# To make and run the client
-make chat
-
-# Install both programs system-wide
+# Install system-wide
 sudo make install
 
 # Test the servers connection
