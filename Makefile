@@ -35,4 +35,7 @@ start: clean trcp
 	@echo ""
 	./$(lastword $^)  --port=$(PORT) $(UID)
 
+stream:
+	curl -N localhost:$(PORT)
+
 .PHONY: clean commit

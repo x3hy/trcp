@@ -10,6 +10,7 @@
 #include <pthread.h>
 #include <arpa/inet.h>
 #include <sys/errno.h>
+#include <sys/epoll.h>
 #include <regex.h>
 
 #include "src/config.h"
@@ -23,12 +24,14 @@ char *id = NULL;
 static int is_quiet = 0;
 
 #define error(...) if(!is_quiet) fprintf(stderr, __VA_ARGS__)
-
 #undef printf
 #define printf(...) if(!is_quiet) fprintf(stdout, __VA_ARGS__)
 
 void *handle_client_conn(void *arg);
 char *url_decode(const char *src);
+void generate_header(int client_fd, int status, char* status_msg, char *content, char **header, size_t *header_len);
+void generate_stream(int client_fd, char **header, size_t *header_len);
+int stream_send(int client_fd, char *content);
 
 // Argument processor function
 int argparse(int argc, char *argv[]){
@@ -65,8 +68,6 @@ int argparse(int argc, char *argv[]){
 
 	return 0;
 }
-
-
 int main(int argc, char *argv[]){
 	if (argparse(argc, argv) != 0)
 		return 1;
@@ -146,35 +147,76 @@ int main(int argc, char *argv[]){
 }
 
 // Generates a HTTP header
-void generate_response(int client_fd, int status, char* status_msg,
-		char *content){
-	char *header = (char *)malloc(BUFFER_SIZE * sizeof(char));
+void generate_header(int client_fd, int status, char* status_msg,
+		char *content, char **header, size_t *header_len){
 
-	// Generate header
-	size_t response_len =
-		snprintf(header, BUFFER_SIZE,
+	// Find the length (per-size sizing)
+	*header_len =
+		snprintf(NULL, 0,
 			"HTTP/1.1 %d %s\r\n"
 			"Content-Type: text/plain\r\n"
 			"\r\n"
 			"%s\r\n",
 			status, status_msg, content);
 
-	// Send the final result
-	send(client_fd, header, response_len, 0);
+	*header = (char *)malloc(*header_len);
 
-	free(header);
+	// Generate header
+	snprintf(*header, BUFFER_SIZE,
+			"HTTP/1.1 %d %s\r\n"
+			"Content-Type: text/plain\r\n"
+			"\r\n"
+			"%s\r\n",
+			status, status_msg, content);
+
 	return;
+}
+
+void generate_stream(int client_fd, char **header, size_t *header_len)
+{
+	*header_len =
+		snprintf(NULL, 0,
+			"HTTP/1.1 200 OK\r\n"
+			"Content-Type: text/event-stream\r\n"
+			"Cache-Control: no-cache\r\n"
+			"Connection: keep-alive\r\n"
+			"\r\n");
+
+	*header = (char *)malloc(*header_len);
+
+	// Generate header
+	snprintf(*header, BUFFER_SIZE,
+			"HTTP/1.1 200 OK\r\n"
+			"Content-Type: text/event-stream\r\n"
+			"Cache-Control: no-cache\r\n"
+			"Connection: keep-alive\r\n"
+			"\r\n");
+	return;
+}
+
+int stream_send(int client_fd, char *content){
+	const int content_size = strlen(content);
+	if (send(client_fd, content, content_size, MSG_NOSIGNAL) <= 0)
+		return 1;
+	return 0;
 }
 
 void *handle_client_conn(void *arg){
 	int client_fd = *((int *)arg);
 	char *buffer = (char *)malloc(BUFFER_SIZE * sizeof(char));
 	ssize_t rec = recv(client_fd, buffer, BUFFER_SIZE, 0);
+	char *header;
+	size_t header_size;
 
 	// No data given
 	if (rec == 0){
-		generate_response(client_fd,
-			202, "OK", "Invalid usage");
+		generate_header(client_fd,
+			202, "OK", "Invalid usage",
+			&header, &header_size);
+		
+		// send generated header
+		send (client_fd, header, header_size, 0);
+		free(header);
 	
 	// Determine method
 	} else {
@@ -183,14 +225,36 @@ void *handle_client_conn(void *arg){
 		regmatch_t matches[2];
 		if (regexec(&regex, buffer, 2, matches, 0) == 0){
 			buffer[matches[1].rm_eo] = '\0';
-			const char *url_encoded_file_name = buffer + matches[1].rm_so;
-			char *url_path  = url_decode(url_encoded_file_name);
+			const char *url_encoded_path= buffer + matches[1].rm_so;
+			char *url_path  = url_decode(url_encoded_path);
 
-			// Offload to the DB
-			db_manage(url_path);
-			generate_response(client_fd,
-				200, "OK", url_path);
+			if (strcmp(url_path, "sock") == 0){
+				generate_stream(client_fd,
+					&header, &header_size);
 
+				// Send the final result
+				send(client_fd, header, header_size, 0);
+
+				// Hold the user while they are connected
+				while(1){
+					if (stream_send(client_fd, "test123"))
+						break;
+					sleep(1);
+				}
+			} else if (strcmp(url_path, "cat") == 0){
+				generate_header(client_fd, 200, "OK", "fat cat",
+						&header, &header_size);
+				send(client_fd, header, header_size, 0);
+			} else {
+				generate_header(client_fd,
+						404, "Not Found", "<h1>404 Not Found</h1>",
+						&header, &header_size);
+				send(client_fd, header, header_size, 0);
+			}
+
+			// do something with url path
+
+			free(header);
 			free(url_path);
 		}
 	}
@@ -199,6 +263,7 @@ void *handle_client_conn(void *arg){
 	close(client_fd);
 	free (arg);
 	free(buffer);
+	printf("Some dude exited\n");
 	return NULL;
 }
 

@@ -6,5 +6,6 @@
 #define PORT_MIN 1024
 #define DEFAULT_PORT 6060
 #define BUFFER_SIZE 512 // max return size
+#define MAX_CLIENTS 10  // max amount of connections
 
 #endif

@@ -29,3 +29,72 @@ make conn
 
 # To download and deploy RIGHT NOW:
 git clone https://github.com/x3hy/trcp && cd trcp && make start
+---
+
+Architecture:
+The server will hold a backlog/queue of messages (definable within the config) and a
+total number of messages received. There will also be a list containing an
+index for every thread, this index will be updated by the thread and will
+contain the total number of messages sent by the thread to its connected
+client.
+
+Each thread will check every one second for if its number (in the thread list)
+is lower to that of the servers total messages. If it is then the thread will
+use the message backlog to send the new messages to its client before it then
+will update its index to reflect the new amount of messages sent.
+
+There is a definable value within the server config that lets you set how many
+total threads there can be at one time, another value lets you decide on the
+maximum size of messages.
+
+This system allows for multiple users to send multiple messages within the
+same second and the server will be able to handle each message in order
+perfectly fine. If there are too many messages being sent at one time and the
+backlog cannot keep up and you are therefore losing messages, you can simply
+increase the message backlog size to fit a larger amount of messages per
+second. A general rule of thumb for setting this would be to use the total
+amount of people on the server multiplied by 1.5, this resulting value can be
+used for the backlog size and this value represents the total amount of
+messages the server can handle at one time. By one time I mean each interval.
+The client-threads will only check for new messages every second so if there
+is not enough backlog to occupy the amount of messages sent in a given second,
+then messages will be lost.
+
+Use the given method of increasing the backlog size OR you can alternatively
+decrease the interval time from one second to .25 seconds or something. Please
+be careful though as too many requests will stack up and could cause heavy
+resource use on your server.
+
+Psudeocode:
+SERVER:
+	total messages 123
+
+	threads (
+		thread1: 123
+	)
+
+	backlog (
+		hello!
+		world!
+		test123
+	)
+
+	wait for connection (
+		on new connection:
+			add new thread to threads
+		
+		new new message (
+			add the message to the backlog
+			increment the total messages
+		)
+	)
+
+thread:
+	while connected (
+		if thread1 in threads is lower then total messages:
+			for total messages - thread1:
+				print the message in the backlog at this index
+		
+		if the client has disconnected then
+			exit and remove this thread from threads
+	)
