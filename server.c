@@ -9,6 +9,7 @@
 #include <pthread.h>
 #include <arpa/inet.h>
 #include <sys/errno.h>
+#include <regex.h>
 
 #define PORT_MAX 65535
 #define PORT_MIN 1024
@@ -23,6 +24,7 @@ int is_quiet = 0;
 #define printf(...) if(!is_quiet) fprintf(stdout, __VA_ARGS__)
 
 void *handle_client_conn(void *arg);
+char *url_decode(const char *src);
 
 // Argument processor function
 int argparse(int argc, char *argv[]){
@@ -50,7 +52,6 @@ int argparse(int argc, char *argv[]){
 				return 1;
 			}
 		}
-
 
 		POSANY(ARGLAST, "<id>", "Must be the last argument"){
 			id = strdup(ARGVAL);
@@ -114,6 +115,7 @@ int main(int argc, char *argv[]){
 			continue;
 		}
 
+		// Create a new thread for each client
 		pthread_t thread_id;
 		pthread_create(&thread_id, NULL, handle_client_conn, (void *)client_fd);
 		pthread_detach(thread_id);
@@ -122,24 +124,79 @@ int main(int argc, char *argv[]){
 	return 0;
 }
 
+// Generates a HTTP header
+void generate_response(int client_fd, int status, char* status_msg,
+		char *content){
+	char *header = (char *)malloc(BUFFER_SIZE * sizeof(char));
+
+	// Generate header
+	size_t response_len =
+		snprintf(header, BUFFER_SIZE,
+			"HTTP/1.1 %d %s\r\n"
+			"Content-Type: text/plain\r\n"
+			"\r\n"
+			"%s\r\n",
+			status, status_msg, content);
+
+	// Send the final result
+	send(client_fd, header, response_len, 0);
+
+	free(header);
+	return;
+}
+
 void *handle_client_conn(void *arg){
 	int client_fd = *((int *)arg);
 	char *buffer = (char *)malloc(BUFFER_SIZE * sizeof(char));
 	ssize_t rec = recv(client_fd, buffer, BUFFER_SIZE, 0);
-	
 
-	if (rec > 0){
-		// data was given.
+	if (rec == 0){
+		// No data given
+		generate_response(client_fd,
+			204, "OK", "Invalid usage");
+	} else {
+		// Determine method
+		regex_t regex;
+		regcomp(&regex, "^GET /([^ ]*) HTTP/1", REG_EXTENDED);
+		regmatch_t matches[2];
+
+		if (regexec(&regex, buffer, 2, matches, 0) == 0){
+			buffer[matches[1].rm_eo] = '\0';
+			const char *url_encoded_file_name = buffer + matches[1].rm_so;
+			char *file_name  = url_decode(url_encoded_file_name);
+
+			generate_response(client_fd,
+				200, "OK", file_name);
+
+			free(file_name);
+		}
 	}
 
-	char *resp = "Hello World!";
-	send (client_fd, resp, strlen(resp), 0);
-
-	printf ("%s\n", buffer);
-
-
+	// Close the connection
 	close(client_fd);
 	free (arg);
 	free(buffer);
 	return NULL;
+}
+
+char *url_decode(const char *src) {
+	size_t src_len = strlen(src);
+	char *decoded = malloc(src_len + 1);
+	size_t decoded_len = 0;
+	
+	// decode %2x to hex
+	for (size_t i = 0; i < src_len; i++) {
+		if (src[i] == '%' && i + 2 < src_len) {
+			int hex_val;
+			sscanf(src + i + 1, "%2x", &hex_val);
+			decoded[decoded_len++] = hex_val;
+			i += 2;
+		} else {
+			decoded[decoded_len++] = src[i];
+		}
+	}
+	
+	// add null terminator
+	decoded[decoded_len] = '\0';
+	return decoded;
 }

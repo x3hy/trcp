@@ -20,3 +20,7 @@ install: 0bchat
 
 0brelay: server.c
 	$(CC) $(CFLAGS) $^ -o $@
+
+conn: testconn
+	./$^ POST test "Hello World!"
+	./$^ GET test

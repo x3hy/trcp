@@ -1,0 +1,35 @@
+#!/bin/sh
+
+PORT=5050
+ADDR="http://localhost"
+PROG="$0"
+METHOD="$1"
+GID="$2"
+
+# Handle METHOD and GID validity
+if [[ ! -n "$METHOD" ||  ! -n "$GID" || (  ! "$METHOD" = "POST" &&  ! "$METHOD" = "GET")]]; then
+	echo "$PROG <GET|POST> <GID>"
+	exit 1;
+fi
+
+# Handle METHOD
+case "$METHOD" in
+	"GET")
+		curl "$ADDR:$PORT/get/$GID"
+		[ $? -eq 0 ] &&
+			exit 0
+	;;
+
+	"POST")
+		shift
+		MSG="$1"
+		if [ ! -n "$MSG" ]; then
+			echo "$PROG POST <GID> <MSG>"
+			exit 1;
+		fi
+
+		curl "$ADDR:$PORT/post/$GID/$MSG"
+		[ $? -eq 0 ] &&
+			exit 0
+	;;
+esac

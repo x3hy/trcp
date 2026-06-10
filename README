@@ -1,0 +1,17 @@
+0bchat
+---
+
+0bchat is a work-in-progress, IRC-like server-client chatting service. There
+is minimal data held by the server and I plan to add full end-to-end
+encryption.
+
+BUILDING:
+
+# To make the server
+make server
+
+# To make the client itself
+make 0bchat
+
+# Test the servers connection
+make conn
