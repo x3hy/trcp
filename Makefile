@@ -1,30 +1,39 @@
 CC := cc
 CFLAGS := -g
 PREFIX := /usr/local
-PORT := 5050
+PORT := 6060
 
-all: 0bchat
+# Copy the config over
+src/config.h: src/config.def.h
+	cat $^ > $@
 
-config.h: config.def.h
-	cat config.def.h > config.h
+# Build the chat client
+trchat: trchat.c src/config.h
+	$(CC) $(CFLAGS) $(firstword $^) -o $@
 
-clean:
-	-rm config.h
-	-rm 0bchat
-	-rm $(PREFIX)/bin/0bchat
+# Build the server
+trcp: trcp.c src/config.h
+	$(CC) $(CFLAGS) $(firstword $^) -o $@
 
-0bchat: 0bchat.c
-	$(CC) $(CFLAGS) $^ -o $@
-
-install: 0bchat
-	mv 0bchat $(PREFIX)/bin/0bchat
-
-0brelay: server.c
-	$(CC) $(CFLAGS) $^ -o $@
-
-conn: testconn
+# Test the connection
+conn: src/testconn
 	./$^ $(PORT) POST test "hello_world"
 	./$^ $(PORT) GET test
 
-start: server
-	./$^ --port=$(PORT)
+# Remove builds
+clean:
+	-rm trcp
+	-rm trchat
+
+# Install systemwide
+install: trchat trcp
+	mv $(firstword $^) $(PREFIX)/bin/trchat
+	mv $(lastword $^) $(PREFIX)/bin/trcp
+
+# Start the server
+start: trcp
+	./$^ --port=$(PORT) --id=$(UID)
+
+# Start the chat
+chat: trchat
+	./$^ --port=$(PORT) --addr=http://localhost --id=$(UID)

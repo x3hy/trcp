@@ -1,17 +1,30 @@
-0bchat
+TRCP v0.1.0
+---
+Text Relay Communication Server, is a relay server that will bounce messages
+from one client to another. TRCP can be used by any client, serving any data,
+as long as it can be represented in text form.
+
+TRCP was made to be a quick n' dirty webserver that you can start up whenever.
+TRCP is universal and its up to the client to decide how data is parsed and
+managed. This repo also contains trchat, an encrypted chat program that can
+communicate over a TRCP server. TRChat has end-to-end encryption and is a
+fully text-based program.
+
+Both of these programs are meant to be as small and lightweight as possible
+whist allowing for quick setup and deployment. They follow a suckless
+philosophy.
 ---
 
-0bchat is a work-in-progress, IRC-like server-client chatting service. There
-is minimal data held by the server and I plan to add full end-to-end
-encryption.
+BUILDING/INSTALLING:
 
-BUILDING:
+# start the server:
+make start
 
-# To make the server
-make server
+# To make and run the client
+make chat
 
-# To make the client itself
-make 0bchat
+# Install both programs system-wide
+sudo make install
 
 # Test the servers connection
 make conn

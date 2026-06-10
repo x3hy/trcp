@@ -1,4 +1,4 @@
-#include "arglib.h"
+#include "src/arglib.h"
 
 #include <stdio.h>
 #include <unistd.h>
@@ -11,12 +11,10 @@
 #include <sys/errno.h>
 #include <regex.h>
 
-#define PORT_MAX 65535
-#define PORT_MIN 1024
-#define BUFFER_SIZE 512
-static int PORT = 5050;
+#include "src/config.h"
+static int PORT = DEFAULT_PORT;
 char *id = NULL;
-int is_quiet = 0;
+static int is_quiet = 0;
 
 #define error(...) if(!is_quiet) fprintf(stderr, __VA_ARGS__)
 
@@ -53,7 +51,7 @@ int argparse(int argc, char *argv[]){
 			}
 		}
 
-		POSANY(ARGLAST, "<id>", "Must be the last argument"){
+		POSANY(ARGLAST, "<id>", "Must be the last argument, this is a unique ID for validating incoming requests"){
 			id = strdup(ARGVAL);
 			ARGNEXT;
 		}
@@ -107,13 +105,16 @@ int main(int argc, char *argv[]){
 		struct sockaddr_in client_addr;
 		socklen_t client_addr_len = sizeof(client_addr);
 		int *client_fd = malloc(sizeof(int));
-		printf("%d", client_fd[0]);
 
 		// Accept the connection
 		if((*client_fd = accept(server_fd, (struct sockaddr *)&client_addr, &client_addr_len)) < 0){
 			error("Failed to accept\n");
 			continue;
 		}
+
+		char client_ip[INET_ADDRSTRLEN];
+		inet_ntop(AF_INET, &client_addr.sin_addr, client_ip, INET_ADDRSTRLEN);
+		printf("Connection from: %s\n", client_ip);
 
 		// Create a new thread for each client
 		pthread_t thread_id;
@@ -153,7 +154,7 @@ void *handle_client_conn(void *arg){
 	// No data given
 	if (rec == 0){
 		generate_response(client_fd,
-			204, "OK", "Invalid usage");
+			202, "OK", "Invalid usage");
 	
 	// Determine method
 	} else {
@@ -164,7 +165,6 @@ void *handle_client_conn(void *arg){
 			buffer[matches[1].rm_eo] = '\0';
 			const char *url_encoded_file_name = buffer + matches[1].rm_so;
 			char *url_path  = url_decode(url_encoded_file_name);
-
 
 			generate_response(client_fd,
 				200, "OK", url_path);
