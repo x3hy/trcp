@@ -102,12 +102,12 @@ int main(int argc, char *argv[]){
 		return EXIT_FAILURE;
 	}
 
-
 	// Move onto the connection loop
 	for (;;){
 		struct sockaddr_in client_addr;
 		socklen_t client_addr_len = sizeof(client_addr);
 		int *client_fd = malloc(sizeof(int));
+		printf("%d", client_fd[0]);
 
 		// Accept the connection
 		if((*client_fd = accept(server_fd, (struct sockaddr *)&client_addr, &client_addr_len)) < 0){
@@ -150,25 +150,26 @@ void *handle_client_conn(void *arg){
 	char *buffer = (char *)malloc(BUFFER_SIZE * sizeof(char));
 	ssize_t rec = recv(client_fd, buffer, BUFFER_SIZE, 0);
 
+	// No data given
 	if (rec == 0){
-		// No data given
 		generate_response(client_fd,
 			204, "OK", "Invalid usage");
+	
+	// Determine method
 	} else {
-		// Determine method
 		regex_t regex;
 		regcomp(&regex, "^GET /([^ ]*) HTTP/1", REG_EXTENDED);
 		regmatch_t matches[2];
-
 		if (regexec(&regex, buffer, 2, matches, 0) == 0){
 			buffer[matches[1].rm_eo] = '\0';
 			const char *url_encoded_file_name = buffer + matches[1].rm_so;
-			char *file_name  = url_decode(url_encoded_file_name);
+			char *url_path  = url_decode(url_encoded_file_name);
+
 
 			generate_response(client_fd,
-				200, "OK", file_name);
+				200, "OK", url_path);
 
-			free(file_name);
+			free(url_path);
 		}
 	}
 
@@ -179,6 +180,7 @@ void *handle_client_conn(void *arg){
 	return NULL;
 }
 
+// Stolen..
 char *url_decode(const char *src) {
 	size_t src_len = strlen(src);
 	char *decoded = malloc(src_len + 1);

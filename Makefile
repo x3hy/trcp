@@ -1,6 +1,7 @@
 CC := cc
 CFLAGS := -g
 PREFIX := /usr/local
+PORT := 5050
 
 all: 0bchat
 
@@ -22,5 +23,8 @@ install: 0bchat
 	$(CC) $(CFLAGS) $^ -o $@
 
 conn: testconn
-	./$^ POST test "Hello World!"
-	./$^ GET test
+	./$^ $(PORT) POST test "hello_world"
+	./$^ $(PORT) GET test
+
+start: server
+	./$^ --port=$(PORT)
