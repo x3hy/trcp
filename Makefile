@@ -1,19 +1,24 @@
 CC := cc
-CFLAGS := -g
 PREFIX := /usr/local
 PORT := 6060
+UID := devtest
+VER := \"$(shell git describe --tags --always --dirty 2>/dev/null)\"
+CFLAGS := -g -DVERSION=$(VER)
 
-# Copy the config over
+# Copy the configuration over
 src/config.h: src/config.def.h
 	cat $^ > $@
 
 # Build the chat client
-trchat: trchat.c src/config.h
+trchat: trchat.o commit src/config.h
 	$(CC) $(CFLAGS) $(firstword $^) -o $@
 
 # Build the server
-trcp: trcp.c src/config.h
+trcp: trcp.o src/config.h
 	$(CC) $(CFLAGS) $(firstword $^) -o $@
+
+%.o: %.c
+	$(CC) $(CFLAGS) -c $< -o $@
 
 # Test the connection
 conn: src/testconn
@@ -22,8 +27,7 @@ conn: src/testconn
 
 # Remove builds
 clean:
-	-rm trcp
-	-rm trchat
+	rm -f trchat trcp *.o
 
 # Install systemwide
 install: trchat trcp
@@ -31,9 +35,12 @@ install: trchat trcp
 	mv $(lastword $^) $(PREFIX)/bin/trcp
 
 # Start the server
-start: trcp
-	./$^ --port=$(PORT) --id=$(UID)
+start: clean trcp
+	@echo ""
+	./$(lastword $^)  --port=$(PORT) $(UID)
 
 # Start the chat
 chat: trchat
-	./$^ --port=$(PORT) --addr=http://localhost --id=$(UID)
+	./$^ --port=$(PORT) --addr=http://localhost $(UID)
+
+.PHONY: clean commit

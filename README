@@ -16,8 +16,11 @@ philosophy.
 ---
 
 BUILDING/INSTALLING:
+# first download the github repo
+git clone https://github.com/x3hy/trcp
+cd trcp
 
-# start the server:
+# start the server (blocking):
 make start
 
 # To make and run the client
@@ -28,3 +31,6 @@ sudo make install
 
 # Test the servers connection
 make conn
+
+# To download and deploy RIGHT NOW:
+git clone https://github.com/x3hy/trcp && cd trcp && make start

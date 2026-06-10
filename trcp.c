@@ -1,4 +1,5 @@
 #include "src/arglib.h"
+#include "src/db.h"
 
 #include <stdio.h>
 #include <unistd.h>
@@ -12,6 +13,11 @@
 #include <regex.h>
 
 #include "src/config.h"
+
+#ifndef VERSION
+#define VERSION "No version"
+#endif
+
 static int PORT = DEFAULT_PORT;
 char *id = NULL;
 static int is_quiet = 0;
@@ -60,11 +66,25 @@ int argparse(int argc, char *argv[]){
 	return 0;
 }
 
+
 int main(int argc, char *argv[]){
 	if (argparse(argc, argv) != 0)
 		return 1;
 
-	printf ("port: %d\n", PORT);
+	printf ("trcp-%s started on port %d\n", VERSION, PORT);
+
+	// Print the censored channel ID (only the first and last char)
+	if (id != NULL){
+		fputs("GId: ", stdout);
+		putchar(id[0]);
+		for(int i = 0; i < strlen(id) - 2; i++)
+			putchar('*');
+		putchar(id[strlen(id)-1]);
+		putchar('\n');
+
+	}
+
+	fflush(stdout);
 
 	int server_fd;
 	struct sockaddr_in addr;
@@ -82,7 +102,7 @@ int main(int argc, char *argv[]){
 
 	// Bind the server to confirm validity
 	if (bind(server_fd, (struct sockaddr *)&addr, sizeof(addr)) < 0){
-		switch (EXIT_FAILURE){
+		switch (errno){
 			case EADDRINUSE:
 				error("bind failed, port is already in use\n");
 				break;
@@ -166,6 +186,8 @@ void *handle_client_conn(void *arg){
 			const char *url_encoded_file_name = buffer + matches[1].rm_so;
 			char *url_path  = url_decode(url_encoded_file_name);
 
+			// Offload to the DB
+			db_manage(url_path);
 			generate_response(client_fd,
 				200, "OK", url_path);
 
