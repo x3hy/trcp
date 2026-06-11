@@ -4,8 +4,8 @@ PORT := 15805
 UID := devtest
 VER := \"$(shell git describe --tags --always --dirty 2>/dev/null)\"
 CFLAGS := -g -DVERSION=$(VER)
-MESSAGE := Hello
-HOST    := http://help-wanna.gl.at.ply.gg
+HOST    := localhost
+MESSAGE :=
 
 # Copy the configuration over
 src/config.h: src/config.def.h
