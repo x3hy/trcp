@@ -1,11 +1,11 @@
 CC := cc
 PREFIX := /usr/local
-PORT := 6060
+PORT := 15805
 UID := devtest
 VER := \"$(shell git describe --tags --always --dirty 2>/dev/null)\"
 CFLAGS := -g -DVERSION=$(VER)
 MESSAGE := Hello
-HOST    := localhost
+HOST    := http://help-wanna.gl.at.ply.gg
 
 # Copy the configuration over
 src/config.h: src/config.def.h
@@ -37,7 +37,7 @@ start: clean trcp
 	@echo "" ./$(lastword $^)  --port=$(PORT) --verbose $(UID)
 
 stream:
-	curl -N localhost:$(PORT)/sock/$(UID) --output - -i
+	curl -N $(HOST):$(PORT)/sock/$(UID) --output - -i
 
 post: src/post
 	./$^ $(PORT) $(UID) $(HOST)
