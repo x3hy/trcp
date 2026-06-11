@@ -34,16 +34,10 @@ static int is_verbose = 0;
 	snprintf(dest, size_var, __VA_ARGS__)
 #define THREAD_EMPTY -1
 #define thread_ref(n) threads[n]
-#define verbose(...) \
+#define verbose(fmt, ...) \
 	do { \
-		if (is_verbose){ \
-			const int line = __LINE__; \
-			int __verbose_printf = snprintf(NULL, 0, "[%d-%s]", line, __func__); \
-			int __verbose_printf_h = __verbose_printf + snprintf(NULL, 0, __VA_ARGS__)+1; \
-			char * __verbose_printf_buf = (char *)malloc(__verbose_printf * sizeof(char)); \
-			snprintf(__verbose_printf_buf, "[%d-%s]", line, __func__); \
-			snprintf(__verbose_printf_buf + __verbose_printf, __verbose_printf_h - __verbose_printf, __VA_ARGS__); \
-		} \
+		if (is_verbose) \
+			printf("[%d-%s] " fmt "\n", __LINE__, __func__, ##__VA_ARGS__); \
 	} while (0)
 
 /* function declarations */
