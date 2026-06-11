@@ -32,14 +32,16 @@ static int is_verbose = 0;
 	size_var = snprintf(NULL, 0, __VA_ARGS__)+1; \
 	dest = (char*)malloc(size_var * sizeof(char)); \
 	snprintf(dest, size_var, __VA_ARGS__)
+#define THREAD_EMPTY -1
 
 /* function declarations */
 void *handle_client_conn(void *arg);
 char *url_decode(const char *src);
 void generate_header(int client_fd, int status, char* status_msg, char **out, size_t *out_len);
 void generate_stream(int client_fd, char **out, size_t *out_len);
-void handle_url_path(int client_fd, char *endpoint);
+void thread_handle_path(int client_fd, char *endpoint);
 int stream_send(int client_fd, char *content);
+int get_empty_thread(void);
 void backlog_append(char *content);
 
 /* backlog */
@@ -124,6 +126,10 @@ int main(int argc, char *argv[]){
 		return EXIT_FAILURE;
 	}
 
+	// Init the thread list
+	for (int i = 0; i < MAX_THREADS; i++)
+		threads[i] = THREAD_EMPTY;
+
 	// Socket config
 	addr.sin_family = AF_INET;
 	addr.sin_addr.s_addr = INADDR_ANY;
@@ -175,7 +181,6 @@ int main(int argc, char *argv[]){
 	return 0;
 }
 
-
 // Sends text content to the stream
 // This will work with any connection through
 // If this returns 1 then the client is no longer connected
@@ -189,7 +194,6 @@ int stream_send(int client_fd, char *content){
 // Client thread function, run for every client
 void *handle_client_conn(void *arg){
 	// Before doing anything the thread must first identify itself
-	/* for (int i = 0; i < threads */
 	int client_fd = *((int *)arg);
 	char *buffer = (char *)malloc(BUFFER_SIZE * sizeof(char));
 	ssize_t rec = recv(client_fd, buffer, BUFFER_SIZE, 0);
@@ -213,7 +217,7 @@ void *handle_client_conn(void *arg){
 			// Offload the endpoint to the manager
 			const char *url_encoded_path= buffer + matches[1].rm_so;
 			char *url_path  = url_decode(url_encoded_path);
-			handle_url_path(client_fd, url_path);
+			thread_handle_path(client_fd, url_path);
 			free(url_path);
 		}
 	}
@@ -229,7 +233,11 @@ void *handle_client_conn(void *arg){
 }
 
 // This function contains all endpoint management
-void handle_url_path(int client_fd, char* endpoint){
+void thread_handle_path(int client_fd, char* endpoint){
+	int mt_thread = get_empty_thread();
+	int *thread_ptr = &threads[mt_thread];
+
+	printf("%d\n", mt_thread);
 	char *header = NULL;
 	size_t header_size;
 
@@ -254,6 +262,15 @@ void handle_url_path(int client_fd, char* endpoint){
 
 	// Start stream
 	if (strcmp(method, "sock") == 0){
+		if (mt_thread == THREAD_EMPTY){
+			generate_header(client_fd, 503, "Service Unavailable", &header, &header_size);
+			send(client_fd, header, header_size, 0);
+			goto exit;
+		}
+
+		// Claim the thread
+		*thread_ptr = 1;
+
 		generate_stream(client_fd, &header, &header_size);
 		send (client_fd, header, header_size, 0);
 
@@ -286,6 +303,7 @@ void handle_url_path(int client_fd, char* endpoint){
 exit:
 	// Close connection
 	free(header);
+	*thread_ptr = THREAD_EMPTY;
 	return;
 }
 
@@ -365,4 +383,11 @@ char *url_decode(const char *src) {
 	// add null terminator
 	decoded[decoded_len] = '\0';
 	return decoded;
+}
+
+int get_empty_thread(void){
+	for (int i = 0; i < MAX_THREADS; i++)
+		if (threads[i] == THREAD_EMPTY)
+			return i;
+	return THREAD_EMPTY;
 }
