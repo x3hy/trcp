@@ -4,6 +4,8 @@ PORT := 6060
 UID := devtest
 VER := \"$(shell git describe --tags --always --dirty 2>/dev/null)\"
 CFLAGS := -g -DVERSION=$(VER)
+MESSAGE := Hello
+
 # Copy the configuration over
 src/config.h: src/config.def.h
 	cat $^ > $@
@@ -36,5 +38,8 @@ start: clean trcp
 
 stream:
 	curl -N localhost:$(PORT)/sock/$(UID) --output - -i
+
+post:
+	curl -N localhost:$(PORT)/post/$(UID)/$(MESSAGE) --output - -i
 
 .PHONY: clean commit src/config.h

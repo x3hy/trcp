@@ -21,6 +21,7 @@
 static int PORT = DEFAULT_PORT;
 char *id = NULL;
 static int is_quiet = 0;
+static int is_verbose = 0;
 
 #define error(...) if(!is_quiet) fprintf(stderr, __VA_ARGS__)
 #undef printf
@@ -43,8 +44,12 @@ void backlog_append(char *content);
 
 /* backlog */
 static char *backlog[BACKLOG_SIZE];
-int backlog_idx;
-int total_messages;
+int backlog_idx = 0;
+int total_messages = 0;
+
+/* thread management */
+static int threads[MAX_THREADS];
+int thread_idx = 0;
 
 // Argument processor function
 int argparse(int argc, char *argv[]){
@@ -53,6 +58,19 @@ int argparse(int argc, char *argv[]){
 			HELP(argparse);
 			return 1;
 		}
+
+		ARG ("--quiet", "Disables ALL stdout output")
+			is_quiet = 1;
+
+		ARG("-q", "Disables ALL stdout output")
+			is_quiet = 1;
+
+		ARG("--verbose", "Shows extra verbose information")
+			is_verbose = 1;
+
+		ARG("-v", "Shows extra verbose information")
+			is_verbose = 1;
+			
 
 		ARG ("--port", "Set the port in use"){
 			if((PORT = atoi(ARGVAL)) == 0 ){
@@ -89,12 +107,10 @@ int main(int argc, char *argv[]){
 	// Print server information
 	printf ("trcp-%s started on port %d\n", VERSION, PORT);
 	if (id != NULL){
-		fputs("GId: ", stdout);
-		putchar(id[0]);
+		printf("GId: %c", id[0]);
 		for(int i = 0; i < strlen(id) - 2; i++)
-			putchar('*');
-		putchar(id[strlen(id)-1]);
-		putchar('\n');
+			printf("*");
+		printf("%c\n", id[strlen(id)-1]);
 	}
 
 	fflush(stdout);
@@ -159,28 +175,6 @@ int main(int argc, char *argv[]){
 	return 0;
 }
 
-// Generates a return header
-void generate_header(int client_fd, int status, char* status_msg, char **out, size_t *out_len){
-	free(*out);
-	snprintfm(*out, *out_len,
-		"HTTP/1.1 %d %s\r\n"
-		"Content-Type: text/plain\r\n"
-		"\r\n",
-		status, status_msg);
-	return;
-}
-
-// Generates the stream header
-void generate_stream(int client_fd, char **out, size_t *out_len){
-	free(*out);
-	snprintfm(*out, *out_len,
-		"HTTP/1.1 200 OK\r\n"
-		"Content-Type: text/event-stream\r\n"
-		"Cache-Control: no-cache\r\n"
-		"Connection: keep-alive\r\n"
-		"\r\n");
-	return;
-}
 
 // Sends text content to the stream
 // This will work with any connection through
@@ -194,6 +188,8 @@ int stream_send(int client_fd, char *content){
 
 // Client thread function, run for every client
 void *handle_client_conn(void *arg){
+	// Before doing anything the thread must first identify itself
+	/* for (int i = 0; i < threads */
 	int client_fd = *((int *)arg);
 	char *buffer = (char *)malloc(BUFFER_SIZE * sizeof(char));
 	ssize_t rec = recv(client_fd, buffer, BUFFER_SIZE, 0);
@@ -267,9 +263,11 @@ void handle_url_path(int client_fd, char* endpoint){
 			// TODO implement ticket behavior here
 			if (stream_send(client_fd, "messages in backlog:\n"))
 				break;
-			for (int i = 0; i > backlog_idx; ++i)
+
+			for (int i = 0; i < backlog_idx; ++i)
 				if (stream_send(client_fd, backlog[i]))
 					break;
+				else stream_send(client_fd, "\n");
 
 			sleep(1);
 		}
@@ -280,13 +278,69 @@ void handle_url_path(int client_fd, char* endpoint){
 		send(client_fd, header, header_size, 0);
 
 		// Append to backlog
-		stream_send(client_fd, "Message sent");
+		stream_send(client_fd, "Message sent:\n");
+		stream_send(client_fd, message);
 		backlog_append(message);
 	}
 
 exit:
 	// Close connection
 	free(header);
+	return;
+}
+
+
+// Appends an item to the backlog
+// Cascades items when overflowing
+void backlog_append(char *content){
+	if (content == NULL)
+		return;
+
+	// Backlog is full so we shuffle
+	if (backlog_idx == BACKLOG_SIZE){
+		free(backlog[0]);
+		printf("restacking backlog\n");
+		for (int i = 0; i < BACKLOG_SIZE-1; ++i){
+			backlog[i] = (char *)malloc(strlen(backlog[i+1])*sizeof(char));
+			strcpy(backlog[i], backlog[i+1]);
+			free(backlog[i+1]);
+			backlog[i+1] = NULL;
+		}
+
+		backlog_idx--;
+	}
+	
+	backlog[backlog_idx] = (char *)malloc(strlen(content)*sizeof(char));
+	strcpy(backlog[backlog_idx], content);
+	backlog_idx++;
+	total_messages ++;
+	if (is_verbose){
+		printf("backlog_idx: %d\n", backlog_idx);
+		printf("total_messages: %d\n", total_messages);
+	}
+	return;
+}
+
+// Generates a return header
+void generate_header(int client_fd, int status, char* status_msg, char **out, size_t *out_len){
+	free(*out);
+	snprintfm(*out, *out_len,
+		"HTTP/1.1 %d %s\r\n"
+		"Content-Type: text/plain\r\n"
+		"\r\n",
+		status, status_msg);
+	return;
+}
+
+// Generates the stream header
+void generate_stream(int client_fd, char **out, size_t *out_len){
+	free(*out);
+	snprintfm(*out, *out_len,
+		"HTTP/1.1 200 OK\r\n"
+		"Content-Type: text/event-stream\r\n"
+		"Cache-Control: no-cache\r\n"
+		"Connection: keep-alive\r\n"
+		"\r\n");
 	return;
 }
 
@@ -311,26 +365,4 @@ char *url_decode(const char *src) {
 	// add null terminator
 	decoded[decoded_len] = '\0';
 	return decoded;
-}
-
-
-void backlog_append(char *content){
-	if (content == NULL)
-		return;
-
-	// Backlog is full so we shuffle
-	if (backlog_idx == BACKLOG_SIZE){
-		free(backlog[0]);
-		for (int i = 0; i < BACKLOG_SIZE-1; ++i){
-			backlog[i] = (char *)malloc(strlen(backlog[i+1])*sizeof(char));
-			strcpy(backlog[i], backlog[i+1]);
-			free(backlog[i+1]);
-			backlog[i+1] = NULL;
-		}
-	}
-	
-	backlog[backlog_idx] = (char *)malloc(strlen(content)*sizeof(char));
-	strcpy(backlog[backlog_idx], content);
-	backlog_idx++;
-	return;
 }
