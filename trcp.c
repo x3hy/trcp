@@ -292,8 +292,8 @@ void thread_handle_path(int client_fd, char* endpoint){
 					thread_ref(mt_thread)++;
 				}
 			// send a ping to keep the connection alive
-			const char* ping = ":\n\n";
-			write(client_fd, ping, strlen(ping));
+			if (stream_send(client_fd, "\n\n"))
+				break;
 
 			usleep(1000000 / THREAD_CHECKS);
 		}
