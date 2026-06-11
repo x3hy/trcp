@@ -33,6 +33,18 @@ static int is_verbose = 0;
 	dest = (char*)malloc(size_var * sizeof(char)); \
 	snprintf(dest, size_var, __VA_ARGS__)
 #define THREAD_EMPTY -1
+#define thread_ref(n) threads[n]
+#define verbose(...) \
+	do { \
+		if (is_verbose){ \
+			const int line = __LINE__; \
+			int __verbose_printf = snprintf(NULL, 0, "[%d-%s]", line, __func__); \
+			int __verbose_printf_h = __verbose_printf + snprintf(NULL, 0, __VA_ARGS__)+1; \
+			char * __verbose_printf_buf = (char *)malloc(__verbose_printf * sizeof(char)); \
+			snprintf(__verbose_printf_buf, "[%d-%s]", line, __func__); \
+			snprintf(__verbose_printf_buf + __verbose_printf, __verbose_printf_h - __verbose_printf, __VA_ARGS__); \
+		} \
+	} while (0)
 
 /* function declarations */
 void *handle_client_conn(void *arg);
@@ -43,6 +55,8 @@ void thread_handle_path(int client_fd, char *endpoint);
 int stream_send(int client_fd, char *content);
 int get_empty_thread(void);
 void backlog_append(char *content);
+int *thread_claim(int n);
+void thread_leave(int n);
 
 /* backlog */
 static char *backlog[BACKLOG_SIZE];
@@ -105,6 +119,7 @@ int argparse(int argc, char *argv[]){
 int main(int argc, char *argv[]){
 	if (argparse(argc, argv) != 0)
 		return 1;
+
 
 	// Print server information
 	printf ("trcp-%s started on port %d\n", VERSION, PORT);
@@ -227,17 +242,17 @@ void *handle_client_conn(void *arg){
 	free(buffer);
 	free(header);
 	close(client_fd);
-
-	printf("Thread exiting\n");
+	if (is_verbose)
+		printf ("Closing connection..\n");
 	return NULL;
 }
 
 // This function contains all endpoint management
 void thread_handle_path(int client_fd, char* endpoint){
 	int mt_thread = get_empty_thread();
-	int *thread_ptr = &threads[mt_thread];
-
-	printf("%d\n", mt_thread);
+	if (is_verbose){
+		printf("thread allocated to threads.%d\n", mt_thread);
+	}
 	char *header = NULL;
 	size_t header_size;
 
@@ -269,24 +284,18 @@ void thread_handle_path(int client_fd, char* endpoint){
 		}
 
 		// Claim the thread
-		*thread_ptr = 1;
-
+		thread_claim (mt_thread);
 		generate_stream(client_fd, &header, &header_size);
 		send (client_fd, header, header_size, 0);
 
 		// Hold the user while they are connected
 		while(1){
+			const int diff = total_messages - thread_ref(mt_thread);
+			if (diff != 0)
+				for (int i = 0; i < diff; i++)
+					stream_send(client_fd, backlog[BACKLOG_SIZE - i]);
 
-			// TODO implement ticket behavior here
-			if (stream_send(client_fd, "messages in backlog:\n"))
-				break;
-
-			for (int i = 0; i < backlog_idx; ++i)
-				if (stream_send(client_fd, backlog[i]))
-					break;
-				else stream_send(client_fd, "\n");
-
-			sleep(1);
+			usleep(1000000 / THREAD_CHECKS);
 		}
 
 	// Get the given message
@@ -303,7 +312,10 @@ void thread_handle_path(int client_fd, char* endpoint){
 exit:
 	// Close connection
 	free(header);
-	*thread_ptr = THREAD_EMPTY;
+	if (is_verbose){
+		printf ("freeing thread.%d\n", mt_thread);
+	}
+	thread_leave(mt_thread);
 	return;
 }
 
@@ -390,4 +402,13 @@ int get_empty_thread(void){
 		if (threads[i] == THREAD_EMPTY)
 			return i;
 	return THREAD_EMPTY;
+}
+
+int *thread_claim(int n){
+	threads[n] = 0;
+	return (&threads[n]);
+}
+
+void thread_leave(int n){
+	threads[n] = THREAD_EMPTY;
 }

@@ -9,5 +9,5 @@
 #define MAX_MSG_SIZE 512   // max string length of messages sent to the server
 #define MAX_THREADS  10    // max amount of connections
 #define BACKLOG_SIZE 10    // amount of items available in the backlog
-#define SERVER CHECKS 1    // amount of checks that threads make per second
+#define THREAD_CHECKS 1    // amount of checks that threads make per second
 #endif
