@@ -313,21 +313,24 @@ char *url_decode(const char *src) {
 	return decoded;
 }
 
+
 void backlog_append(char *content){
 	if (content == NULL)
 		return;
 
 	// Backlog is full so we shuffle
 	if (backlog_idx == BACKLOG_SIZE){
-		free(backlog[BACKLOG_SIZE-1]);
-		for (int i = BACKLOG_SIZE-1; i > 0; ++i){
+		free(backlog[0]);
+		for (int i = 0; i < BACKLOG_SIZE-1; ++i){
+			backlog[i] = (char *)malloc(strlen(backlog[i+1])*sizeof(char));
+			strcpy(backlog[i], backlog[i+1]);
 			free(backlog[i+1]);
-			backlog[i+1] = (char *)malloc(strlen(backlog[i])*sizeof(char));
-			strcpy(backlog[i+1], backlog[i]);
+			backlog[i+1] = NULL;
 		}
 	}
 	
-	backlog[0] = (char *)malloc(strlen(content)*sizeof(char));
-	strcpy(backlog[0], content);
+	backlog[backlog_idx] = (char *)malloc(strlen(content)*sizeof(char));
+	strcpy(backlog[backlog_idx], content);
+	backlog_idx++;
 	return;
 }
