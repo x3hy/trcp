@@ -1,16 +1,11 @@
-TRCP v0.1.0
+TRCS v0.1.0
 ---
 Text Relay Communication Server, is a relay server that will bounce messages
 from one client to another. TRCP can be used by any client, serving any data,
 as long as it can be represented in text form.
 
-TRCP was made to be a quick n' dirty webserver that you can start up whenever.
-TRCP is universal and its up to the client to decide how data is parsed and
-managed.
-
-This  program are meant to be as small and lightweight as possible
-whist allowing for quick setup and deployment. They follow a suckless
-philosophy.
+TRCS was made to be a quick n' dirty webserver that you can start up quickly that allows for multi-client streaming and posting of data.
+This server was made to be as lightweight and minimal as possible. Whist writing this server I have tried to adhere to the Suckless philosophy.
 ---
 
 BUILDING/INSTALLING:
@@ -21,14 +16,17 @@ cd trcp
 # start the server (blocking):
 make start
 
-# Install system-wide
-sudo make install
+# start streaming messages from the server
+make stream
 
-# Test the servers connection
-make conn
+# crude posting script
+make post
 
 # To download and deploy RIGHT NOW:
 git clone https://github.com/x3hy/trcp && cd trcp && make start
+
+# On a medium-quality internet connection this program can download, compile and start in under a second.
+0m01.29s real 0m00.15s user 0m00.06s system
 ---
 
 Architecture:
