@@ -293,15 +293,13 @@ void thread_handle_path(int client_fd, char* endpoint){
 					thread_ref(mt_thread)++;
 				}
 
-			if (time(NULL) - last_ping >= 20) {
-				const char* ping = ":\n\n";
-				if (write(client_fd, ping, strlen(ping)) <= 0) {
-					verbose("Client disconnected during ping\n");
+			// Pings the server every
+			if (time(NULL) - last_ping >= 20)
+				if (write(client_fd, ":\n\n", 3) <= 0)
 					break;
-				}
-			}
-			last_ping = time(NULL);
 
+			// Reset the last ping
+			last_ping = time(NULL);
 			usleep(1000000 / THREAD_CHECKS);
 		}
 
