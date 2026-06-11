@@ -4,6 +4,7 @@
 #define PORT_MIN     1024  // minimum port size
 
 /* Server settings */
+#define BUFFER_SIZE 512    // Misc buffer size
 #define DEFAULT_PORT 6060
 #define MAX_THREADS  10    // max amount of connections
 #define MAX_MSG_SIZE 512   // max string length of messages sent to the server

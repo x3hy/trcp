@@ -1,5 +1,4 @@
 #include "src/arglib.h"
-#include "src/db.h"
 
 #include <stdio.h>
 #include <unistd.h>
@@ -13,11 +12,11 @@
 #include <sys/epoll.h>
 #include <regex.h>
 
-#include "src/config.h"
-
 #ifndef VERSION
 #define VERSION "No version"
 #endif
+
+#include "src/config.h"
 
 static int PORT = DEFAULT_PORT;
 char *id = NULL;
@@ -27,11 +26,25 @@ static int is_quiet = 0;
 #undef printf
 #define printf(...) if(!is_quiet) fprintf(stdout, __VA_ARGS__)
 
+// Very useful snprintf macro
+#define snprintfm(dest, size_var, ...)\
+	size_var = snprintf(NULL, 0, __VA_ARGS__)+1; \
+	dest = (char*)malloc(size_var * sizeof(char)); \
+	snprintf(dest, size_var, __VA_ARGS__)
+
+/* function declarations */
 void *handle_client_conn(void *arg);
 char *url_decode(const char *src);
-void generate_header(int client_fd, int status, char* status_msg, char *content, char **header, size_t *header_len);
-void generate_stream(int client_fd, char **header, size_t *header_len);
+void generate_header(int client_fd, int status, char* status_msg, char **out, size_t *out_len);
+void generate_stream(int client_fd, char **out, size_t *out_len);
+void handle_url_path(int client_fd, char *endpoint);
 int stream_send(int client_fd, char *content);
+void backlog_append(char *content);
+
+/* backlog */
+static char backlog[BACKLOG_SIZE][MAX_MSG_SIZE];
+int backlog_idx;
+int total_messages;
 
 // Argument processor function
 int argparse(int argc, char *argv[]){
@@ -68,13 +81,13 @@ int argparse(int argc, char *argv[]){
 
 	return 0;
 }
+
 int main(int argc, char *argv[]){
 	if (argparse(argc, argv) != 0)
 		return 1;
 
+	// Print server information
 	printf ("trcp-%s started on port %d\n", VERSION, PORT);
-
-	// Print the censored channel ID (only the first and last char)
 	if (id != NULL){
 		fputs("GId: ", stdout);
 		putchar(id[0]);
@@ -82,7 +95,6 @@ int main(int argc, char *argv[]){
 			putchar('*');
 		putchar(id[strlen(id)-1]);
 		putchar('\n');
-
 	}
 
 	fflush(stdout);
@@ -107,6 +119,7 @@ int main(int argc, char *argv[]){
 			case EADDRINUSE:
 				error("bind failed, port is already in use\n");
 				break;
+
 			default:
 				error("bind failed with code: %d\n", EXIT_FAILURE);
 				break;
@@ -146,54 +159,32 @@ int main(int argc, char *argv[]){
 	return 0;
 }
 
-// Generates a HTTP header
-void generate_header(int client_fd, int status, char* status_msg,
-		char *content, char **header, size_t *header_len){
-
-	// Find the length (per-size sizing)
-	*header_len =
-		snprintf(NULL, 0,
-			"HTTP/1.1 %d %s\r\n"
-			"Content-Type: text/plain\r\n"
-			"\r\n"
-			"%s\r\n",
-			status, status_msg, content);
-
-	*header = (char *)malloc(*header_len);
-
-	// Generate header
-	snprintf(*header, BUFFER_SIZE,
-			"HTTP/1.1 %d %s\r\n"
-			"Content-Type: text/plain\r\n"
-			"\r\n"
-			"%s\r\n",
-			status, status_msg, content);
-
+// Generates a return header
+void generate_header(int client_fd, int status, char* status_msg, char **out, size_t *out_len){
+	free(*out);
+	snprintfm(*out, *out_len,
+		"HTTP/1.1 %d %s\r\n"
+		"Content-Type: text/plain\r\n"
+		"\r\n",
+		status, status_msg);
 	return;
 }
 
-void generate_stream(int client_fd, char **header, size_t *header_len)
-{
-	*header_len =
-		snprintf(NULL, 0,
-			"HTTP/1.1 200 OK\r\n"
-			"Content-Type: text/event-stream\r\n"
-			"Cache-Control: no-cache\r\n"
-			"Connection: keep-alive\r\n"
-			"\r\n");
-
-	*header = (char *)malloc(*header_len);
-
-	// Generate header
-	snprintf(*header, BUFFER_SIZE,
-			"HTTP/1.1 200 OK\r\n"
-			"Content-Type: text/event-stream\r\n"
-			"Cache-Control: no-cache\r\n"
-			"Connection: keep-alive\r\n"
-			"\r\n");
+// Generates the stream header
+void generate_stream(int client_fd, char **out, size_t *out_len){
+	free(*out);
+	snprintfm(*out, *out_len,
+		"HTTP/1.1 200 OK\r\n"
+		"Content-Type: text/event-stream\r\n"
+		"Cache-Control: no-cache\r\n"
+		"Connection: keep-alive\r\n"
+		"\r\n");
 	return;
 }
 
+// Sends text content to the stream
+// This will work with any connection through
+// If this returns 1 then the client is no longer connected
 int stream_send(int client_fd, char *content){
 	const int content_size = strlen(content);
 	if (send(client_fd, content, content_size, MSG_NOSIGNAL) <= 0)
@@ -201,70 +192,101 @@ int stream_send(int client_fd, char *content){
 	return 0;
 }
 
+// Client thread function, run for every client
 void *handle_client_conn(void *arg){
 	int client_fd = *((int *)arg);
 	char *buffer = (char *)malloc(BUFFER_SIZE * sizeof(char));
 	ssize_t rec = recv(client_fd, buffer, BUFFER_SIZE, 0);
-	char *header;
+	char *header = NULL;
 	size_t header_size;
 
-	// No data given
+	// No data given, this should not be achievable
 	if (rec == 0){
-		generate_header(client_fd,
-			202, "OK", "Invalid usage",
-			&header, &header_size);
-		
-		// send generated header
+		generate_header(client_fd, 204, "No Content", &header, &header_size);
 		send (client_fd, header, header_size, 0);
-		free(header);
+		stream_send(client_fd, "No Content");
 	
-	// Determine method
+	// Filter the request and get the endpoint requested
 	} else {
 		regex_t regex;
 		regcomp(&regex, "^GET /([^ ]*) HTTP/1", REG_EXTENDED);
 		regmatch_t matches[2];
 		if (regexec(&regex, buffer, 2, matches, 0) == 0){
 			buffer[matches[1].rm_eo] = '\0';
+
+			// Offload the endpoint to the manager
 			const char *url_encoded_path= buffer + matches[1].rm_so;
 			char *url_path  = url_decode(url_encoded_path);
-
-			if (strcmp(url_path, "sock") == 0){
-				generate_stream(client_fd,
-					&header, &header_size);
-
-				// Send the final result
-				send(client_fd, header, header_size, 0);
-
-				// Hold the user while they are connected
-				while(1){
-					if (stream_send(client_fd, "test123"))
-						break;
-					sleep(1);
-				}
-			} else if (strcmp(url_path, "cat") == 0){
-				generate_header(client_fd, 200, "OK", "fat cat",
-						&header, &header_size);
-				send(client_fd, header, header_size, 0);
-			} else {
-				generate_header(client_fd,
-						404, "Not Found", "<h1>404 Not Found</h1>",
-						&header, &header_size);
-				send(client_fd, header, header_size, 0);
-			}
-
-			// do something with url path
-
-			free(header);
+			handle_url_path(client_fd, url_path);
 			free(url_path);
 		}
 	}
 
 	// Close the connection
-	close(client_fd);
 	free (arg);
 	free(buffer);
-	printf("Some dude exited\n");
+	free(header);
+	close(client_fd);
+
+	printf("Thread exiting\n");
 	return NULL;
+}
+
+// This function contains all endpoint management
+void handle_url_path(int client_fd, char* endpoint){
+	char *header = NULL;
+	size_t header_size;
+
+	// iterate through endpoints
+	char *method   = strtok(endpoint, "/");
+	char *given_id = strtok(NULL, "/");
+	char *message  = strtok(NULL, "/");
+
+	// No method OR id OR message was given.
+	if (method == NULL || given_id == NULL || (!strcmp(method, "post") && message == NULL)){
+		generate_header(client_fd, 400, "Bad Request", &header, &header_size);
+		send(client_fd, header, header_size, 0);
+		goto exit;
+	}
+
+	// ID is invalid
+	if (strcmp(given_id, id)){
+		generate_header(client_fd, 401, "Unauthorized", &header, &header_size);
+		send(client_fd, header, header_size, 0);
+		goto exit;
+	}
+
+	// Start stream
+	if (strcmp(method, "sock") == 0){
+		generate_stream(client_fd, &header, &header_size);
+		send (client_fd, header, header_size, 0);
+
+		// Hold the user while they are connected
+		while(1){
+
+			// TODO implement ticket behavior here
+			if (stream_send(client_fd, "messages in backlog:\n"))
+				break;
+			for (int i = 0; i > backlog_idx; ++i)
+				if (stream_send(client_fd, backlog[i]))
+					break;
+
+			sleep(1);
+		}
+
+	// Get the given message
+	} else {
+		generate_header(client_fd, 200, "OK", &header, &header_size);
+		send(client_fd, header, header_size, 0);
+
+		// Append to backlog
+		backlog_append(message);
+	}
+
+exit:
+	// Close connection
+	free(header);
+	return;
 }
 
 // Stolen..
@@ -288,4 +310,8 @@ char *url_decode(const char *src) {
 	// add null terminator
 	decoded[decoded_len] = '\0';
 	return decoded;
+}
+
+void backlog_append(char *content){
+	return;
 }
