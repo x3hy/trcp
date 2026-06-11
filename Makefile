@@ -34,10 +34,11 @@ install: trchat trcp
 
 # Start the server
 start: clean trcp
-	@echo "" ./$(lastword $^)  --port=$(PORT) --verbose $(UID)
+	./$(lastword $^)  --port=$(PORT) --verbose $(UID)
 
 stream:
 	curl -N $(HOST):$(PORT)/sock/$(UID) --output - -i -v --http1.1 --keepalive-time 30
+
 post: src/post
 	./$^ $(PORT) $(UID) $(HOST)
 
