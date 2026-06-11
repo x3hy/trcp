@@ -1,0 +1,14 @@
+#!/bin/sh
+PORT="$1"
+GID="$2"
+HOST="$3"
+
+while [ 1 ]; do
+	echo "There is no url safety yet, use no spaces or non URL friendly chars"
+	read -p ":" input
+	curl "$HOST:$PORT/post/$GID/$input" -iN --output -
+	if [ $? -ne 0 ]; then
+		exit 1;
+	fi
+	echo
+done

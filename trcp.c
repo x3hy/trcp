@@ -37,7 +37,7 @@ static int is_verbose = 0;
 #define verbose(fmt, ...) \
 	do { \
 		if (is_verbose) \
-			printf("[%d-%s] " fmt "\n", __LINE__, __func__, ##__VA_ARGS__); \
+			printf("\033[2m[INFO #%d-%s()]\033[0m " fmt, __LINE__, __func__, ##__VA_ARGS__); \
 	} while (0)
 
 /* function declarations */
@@ -114,14 +114,16 @@ int main(int argc, char *argv[]){
 	if (argparse(argc, argv) != 0)
 		return 1;
 
-
 	// Print server information
-	printf ("trcp-%s started on port %d\n", VERSION, PORT);
-	if (id != NULL){
-		printf("GId: %c", id[0]);
-		for(int i = 0; i < strlen(id) - 2; i++)
-			printf("*");
-		printf("%c\n", id[strlen(id)-1]);
+	printf ("\033[3mtrcp-%s\033[0m started on port \033[1m%d\033[0m\n", VERSION, PORT);
+	if (id != NULL && is_verbose){
+
+		// Print censored verbose info
+		char *censor = strdup(id);
+		for(int i = 0; i < strlen(censor) - 2; i++)
+			censor[i+1] = '*';
+		verbose("GId: %s\n", censor);
+		free(censor);
 	}
 
 	fflush(stdout);
@@ -179,7 +181,7 @@ int main(int argc, char *argv[]){
 
 		char client_ip[INET_ADDRSTRLEN];
 		inet_ntop(AF_INET, &client_addr.sin_addr, client_ip, INET_ADDRSTRLEN);
-		printf("Connection from: %s\n", client_ip);
+		verbose("connection from: %s\n", client_ip);
 
 		// Create a new thread for each client
 		pthread_t thread_id;
@@ -236,17 +238,14 @@ void *handle_client_conn(void *arg){
 	free(buffer);
 	free(header);
 	close(client_fd);
-	if (is_verbose)
-		printf ("Closing connection..\n");
+	verbose ("Closing connection..\n");
 	return NULL;
 }
 
 // This function contains all endpoint management
 void thread_handle_path(int client_fd, char* endpoint){
 	int mt_thread = get_empty_thread();
-	if (is_verbose){
-		printf("thread allocated to threads.%d\n", mt_thread);
-	}
+	verbose("thread allocated to threads.%d\n", mt_thread);
 	char *header = NULL;
 	size_t header_size;
 
@@ -264,6 +263,7 @@ void thread_handle_path(int client_fd, char* endpoint){
 
 	// ID is invalid
 	if (strcmp(given_id, id)){
+		verbose("%s != %s\n", given_id, id);
 		generate_header(client_fd, 401, "Unauthorized", &header, &header_size);
 		send(client_fd, header, header_size, 0);
 		goto exit;
@@ -286,8 +286,11 @@ void thread_handle_path(int client_fd, char* endpoint){
 		while(1){
 			const int diff = total_messages - thread_ref(mt_thread);
 			if (diff != 0)
-				for (int i = 0; i < diff; i++)
-					stream_send(client_fd, backlog[BACKLOG_SIZE - i]);
+				for (int i = 0; i < diff; i++){
+					stream_send(client_fd, backlog[backlog_idx - i - 1]);
+					stream_send(client_fd, "\n");
+					thread_ref(mt_thread)++;
+				}
 
 			usleep(1000000 / THREAD_CHECKS);
 		}
@@ -306,9 +309,7 @@ void thread_handle_path(int client_fd, char* endpoint){
 exit:
 	// Close connection
 	free(header);
-	if (is_verbose){
-		printf ("freeing thread.%d\n", mt_thread);
-	}
+	verbose ("freeing thread.%d\n", mt_thread);
 	thread_leave(mt_thread);
 	return;
 }
@@ -323,7 +324,7 @@ void backlog_append(char *content){
 	// Backlog is full so we shuffle
 	if (backlog_idx == BACKLOG_SIZE){
 		free(backlog[0]);
-		printf("restacking backlog\n");
+		verbose("restacking backlog\n");
 		for (int i = 0; i < BACKLOG_SIZE-1; ++i){
 			backlog[i] = (char *)malloc(strlen(backlog[i+1])*sizeof(char));
 			strcpy(backlog[i], backlog[i+1]);
@@ -338,10 +339,8 @@ void backlog_append(char *content){
 	strcpy(backlog[backlog_idx], content);
 	backlog_idx++;
 	total_messages ++;
-	if (is_verbose){
-		printf("backlog_idx: %d\n", backlog_idx);
-		printf("total_messages: %d\n", total_messages);
-	}
+	verbose("new message appended to backlog\n");
+	verbose("total_messages: %d\n", total_messages);
 	return;
 }
 
@@ -353,6 +352,7 @@ void generate_header(int client_fd, int status, char* status_msg, char **out, si
 		"Content-Type: text/plain\r\n"
 		"\r\n",
 		status, status_msg);
+	verbose("generated status: %d-%s header\n", status, status_msg);
 	return;
 }
 
@@ -365,6 +365,7 @@ void generate_stream(int client_fd, char **out, size_t *out_len){
 		"Cache-Control: no-cache\r\n"
 		"Connection: keep-alive\r\n"
 		"\r\n");
+	verbose("created new stream header\n");
 	return;
 }
 
@@ -399,7 +400,7 @@ int get_empty_thread(void){
 }
 
 int *thread_claim(int n){
-	threads[n] = 0;
+	threads[n] = total_messages - thread_idx;
 	return (&threads[n]);
 }
 

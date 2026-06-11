@@ -5,6 +5,7 @@ UID := devtest
 VER := \"$(shell git describe --tags --always --dirty 2>/dev/null)\"
 CFLAGS := -g -DVERSION=$(VER)
 MESSAGE := Hello
+HOST    := localhost
 
 # Copy the configuration over
 src/config.h: src/config.def.h
@@ -33,13 +34,13 @@ install: trchat trcp
 
 # Start the server
 start: clean trcp
-	@echo ""
-	./$(lastword $^)  --port=$(PORT) --verbose $(UID)
+	@echo "" ./$(lastword $^)  --port=$(PORT) --verbose $(UID)
 
 stream:
 	curl -N localhost:$(PORT)/sock/$(UID) --output - -i
 
-post:
-	curl -N localhost:$(PORT)/post/$(UID)/$(MESSAGE) --output - -i
+post: src/post
+	./$^ $(PORT) $(UID) $(HOST)
+
 
 .PHONY: clean commit src/config.h
