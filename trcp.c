@@ -362,7 +362,7 @@ void generate_stream(int client_fd, char **out, size_t *out_len){
 	snprintfm(*out, *out_len,
 		"HTTP/1.1 200 OK\r\n"
 		"Content-Type: text/event-stream\r\n"
-		"Cache-Control: no-cache\r\n"
+		"Cache-Control: no-cache, no-store, must-revalidate\r\n"
 		"Connection: keep-alive\r\n"
 		"\r\n");
 	verbose("created new stream header\n");
