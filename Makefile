@@ -4,7 +4,7 @@ PORT := 15805
 UID := devtest
 VER := \"$(shell git describe --tags --always --dirty 2>/dev/null)\"
 CFLAGS := -g -DVERSION=$(VER)
-HOST    := http://help-wanna.gl.at.ply.gg
+HOST    := help-wanna.gl.at.ply.gg
 MESSAGE := 
 
 # Copy the configuration over
@@ -37,9 +37,10 @@ start: clean trcp
 	./$(lastword $^)  --port=$(PORT) --verbose $(UID)
 
 stream:
-	curl -N $(HOST):$(PORT)/sock/$(UID) --output - -i
+	curl -N $(HOST):$(PORT)/sock/$(UID) --output - -i -v --http1.1 --keepalive-time 30
 
 post: src/post
 	./$^ $(PORT) $(UID) $(HOST)
+
 
 .PHONY: clean commit src/config.h
