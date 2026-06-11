@@ -42,7 +42,7 @@ int stream_send(int client_fd, char *content);
 void backlog_append(char *content);
 
 /* backlog */
-static char backlog[BACKLOG_SIZE][MAX_MSG_SIZE];
+static char *backlog[BACKLOG_SIZE];
 int backlog_idx;
 int total_messages;
 
@@ -280,6 +280,7 @@ void handle_url_path(int client_fd, char* endpoint){
 		send(client_fd, header, header_size, 0);
 
 		// Append to backlog
+		stream_send(client_fd, "Message sent");
 		backlog_append(message);
 	}
 
@@ -313,5 +314,20 @@ char *url_decode(const char *src) {
 }
 
 void backlog_append(char *content){
+	if (content == NULL)
+		return;
+
+	// Backlog is full so we shuffle
+	if (backlog_idx == BACKLOG_SIZE){
+		free(backlog[BACKLOG_SIZE-1]);
+		for (int i = BACKLOG_SIZE-1; i > 0; ++i){
+			free(backlog[i+1]);
+			backlog[i+1] = (char *)malloc(strlen(backlog[i])*sizeof(char));
+			strcpy(backlog[i+1], backlog[i]);
+		}
+	}
+	
+	backlog[0] = (char *)malloc(strlen(content)*sizeof(char));
+	strcpy(backlog[0], content);
 	return;
 }
