@@ -281,6 +281,7 @@ void thread_handle_path(int client_fd, char* endpoint){
 		thread_claim (mt_thread);
 		generate_stream(client_fd, &header, &header_size);
 		send (client_fd, header, header_size, 0);
+		time_t last_ping = time(NULL);
 
 		// Hold the user while they are connected
 		while(1){
@@ -291,9 +292,15 @@ void thread_handle_path(int client_fd, char* endpoint){
 					stream_send(client_fd, "\n");
 					thread_ref(mt_thread)++;
 				}
-			// send a ping to keep the connection alive
-			if (stream_send(client_fd, "\n\n"))
-				break;
+
+			if (time(NULL) - last_ping >= 20) {
+				const char* ping = ":\n\n";
+				if (write(client_fd, ping, strlen(ping)) <= 0) {
+					verbose("Client disconnected during ping\n");
+					break;
+				}
+			}
+			last_ping = time(NULL);
 
 			usleep(1000000 / THREAD_CHECKS);
 		}

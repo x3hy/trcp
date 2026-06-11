@@ -5,20 +5,32 @@ HOST="$3"
 
 read -p "Choose a username:" username
 
+# Converts chars over to URL safe
 urlsafe () {
-  echo -n "$1" | od -t d1 | awk '{
-      for (i = 2; i <= NF; i++) {
-        printf(($i>=48 && $i<=57) || ($i>=65 && $i<=90) || ($i>=97 && $i<=122) ||
-                $i==45 || $i==46 || $i==95 || $i==126 ?
-               "%c" : "%%%02x", $i)
-      }
-    }'
+	echo -n "$1" | od -t d1 | awk '{
+		for (i = 2; i <= NF; i++) {
+			printf(($i>=48 && $i<=57) || ($i>=65 && $i<=90) || ($i>=97 && $i<=122) ||
+				$i==45 || $i==46 || $i==95 || $i==126 ?
+				"%c" : "%%%02x", $i)
+		}
+	}'
+}
+
+# Gets the date in a specific format (just the time)
+datetime(){
+	date +%H:%M:%S
+}
+
+# Sends a message to the server
+send_message(){
+	local message="$1"
+	curl "$HOST:$PORT/post/$GID/$(urlsafe "$message")" -iN --output -
 }
 
 while [ 1 ]; do
-	echo "There is no url safety yet, use no spaces or non URL friendly chars"
 	read -p ":" input
-	curl "$HOST:$PORT/post/$GID/$username:%20$(urlsafe "$input")" -iN --output -
+	send_message "[$(datetime) @$username] $input"
+
 	if [ $? -ne 0 ]; then
 		exit 1;
 	fi
