@@ -1,0 +1,27 @@
+#!/bin/sh
+
+# Prompt for values
+read -p "Enter a password: " password
+read -p "Enter text content: " content
+
+onfail(){
+	echo "Something went wrong with test.. fernet script is not working correctly";
+	exit 1;
+}
+
+# Encrypt
+enc=$(./fernet ENC "$password" "$content")
+[ $? -ne 0 ] && onfail
+echo "encrypted content: $enc"
+
+# Decrypt
+dec=$(./fernet DEC "$password" "$enc")
+[ $? -ne 0 ] && onfail
+echo "decrypted content: $dec"
+
+# Check if the original content matches the decrypted content
+[ ! "$dec" = "$content" ] && onfail
+
+# Test passed
+echo "Fernet test complete, working correctly";
+exit 0;

@@ -1,10 +1,10 @@
 CC := cc
 PREFIX := /usr/local
-PORT := 15805
+PORT := 6060
 UID := devtest
 VER := \"$(shell git describe --tags --always --dirty 2>/dev/null)\"
 CFLAGS := -g -DVERSION=$(VER)
-HOST    := help-wanna.gl.at.ply.gg
+HOST    := localhost
 MESSAGE := 
 
 # Copy the configuration over
@@ -34,6 +34,7 @@ install: trchat trcp
 
 # Start the server
 start: clean trcp
+	@echo "" # newline to show server output
 	./$(lastword $^)  --port=$(PORT) --verbose $(UID)
 
 stream:

@@ -1,0 +1,46 @@
+#!/usr/bin/python3
+from cryptography.fernet import Fernet
+from sys import argv
+from hashlib import sha256
+from base64 import b64encode as base64
+
+
+# Encrypts a given string
+def encrypt_string(string, key):
+    try:
+        fernet = Fernet(key);
+        return fernet.encrypt(string.encode())
+    except Exception as e:
+        print(f"Error encrypting string: {e}")
+        return None
+
+
+# Decrypts a given string
+def decrypt_string(string, key):
+    try:
+        fernet = Fernet(key);
+        return fernet.decrypt(string)
+    except Exception as e:
+        print(f"Error decrypting string: {e}")
+        return None
+
+
+# Generate a fernet hash from the given key
+def gen_safe_key(key):
+    return base64(sha256(key.encode("utf-8")).digest())
+
+
+if __name__ == "__main__":
+    if len(argv) != 4:
+        print("PROGNAME <DEC|ENC> <passphrase> <content>")
+        quit()
+
+    if argv[1] == "DEC":
+        print(decrypt_string(argv[3], gen_safe_key(argv[2])).decode())
+
+    elif argv[1] == "ENC":
+        print(encrypt_string(argv[3], gen_safe_key(argv[2])).decode())
+
+    else:
+        print("Invalid usage")
+
