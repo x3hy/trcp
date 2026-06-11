@@ -400,7 +400,7 @@ int get_empty_thread(void){
 }
 
 int *thread_claim(int n){
-	threads[n] = total_messages - thread_idx;
+	threads[n] = total_messages - backlog_idx;
 	return (&threads[n]);
 }
 
