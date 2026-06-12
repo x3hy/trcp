@@ -16,7 +16,7 @@ deps:
 	$(PIP) install cryptography
 
 test: test.c fernet.h
-	$(CC) $(firstword $^) -o $@ $(shell $(PYC) --cflags) $(shell $(PYC) --embed --ldflags) -L. -lfernet -Wl,-rpath=.
+	$(CC) $(firstword $^) -o $@ $(shell $(PYC) --cflags) $(shell $(PYC) --embed --ldflags) -L. -lfernet -Wl,-rpath=. -lfernet
 
 
 

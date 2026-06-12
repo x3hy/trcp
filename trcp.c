@@ -287,7 +287,7 @@ void thread_handle_path(int client_fd, char* endpoint){
 			const int diff = total_messages - thread_ref(mt_thread);
 			if (diff != 0)
 				for (int i = 0; i < diff; i++){
-					stream_send(client_fd, backlog[backlog_idx - i]);
+					stream_send(client_fd, backlog[backlog_idx - i - 1]);
 					stream_send(client_fd, "\n");
 					thread_ref(mt_thread)++;
 				}
