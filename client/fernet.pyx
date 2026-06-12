@@ -1,4 +1,3 @@
-#!/usr/bin/python3
 from cryptography.fernet import Fernet
 from hashlib import sha256
 from base64 import b64encode as base64

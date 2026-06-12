@@ -32,6 +32,7 @@ static int is_verbose = 0;
 	size_var = snprintf(NULL, 0, __VA_ARGS__)+1; \
 	dest = (char*)malloc(size_var * sizeof(char)); \
 	snprintf(dest, size_var, __VA_ARGS__)
+
 #define THREAD_EMPTY -1
 #define thread_ref(n) threads[n]
 #define verbose(fmt, ...) \
@@ -69,18 +70,10 @@ int argparse(int argc, char *argv[]){
 			return 1;
 		}
 
-		ARG ("--quiet", "Disables ALL stdout output")
-			is_quiet = 1;
-
-		ARG("-q", "Disables ALL stdout output")
-			is_quiet = 1;
-
-		ARG("--verbose", "Shows extra verbose information")
-			is_verbose = 1;
-
-		ARG("-v", "Shows extra verbose information")
-			is_verbose = 1;
-			
+		ARG ("--quiet", "Disables ALL stdout output") is_quiet = 1;
+		ARG("-q", "Disables ALL stdout output") is_quiet = 1;
+		ARG("--verbose", "Shows extra verbose information") is_verbose = 1;
+		ARG("-v", "Shows extra verbose information") is_verbose = 1;
 
 		ARG ("--port", "Set the port in use"){
 			if((PORT = atoi(ARGVAL)) == 0 ){
@@ -196,6 +189,11 @@ int main(int argc, char *argv[]){
 // This will work with any connection through
 // If this returns 1 then the client is no longer connected
 int stream_send(int client_fd, char *content){
+	if (content == NULL){
+		verbose ("content is NULL");
+		return 1;
+	}
+
 	const int content_size = strlen(content);
 	if (send(client_fd, content, content_size, MSG_NOSIGNAL) <= 0)
 		return 1;
@@ -210,6 +208,7 @@ void *handle_client_conn(void *arg){
 	ssize_t rec = recv(client_fd, buffer, BUFFER_SIZE, 0);
 	char *header = NULL;
 	size_t header_size;
+	verbose("%s\n", buffer);
 
 	// No data given, this should not be achievable
 	if (rec == 0){
@@ -288,7 +287,7 @@ void thread_handle_path(int client_fd, char* endpoint){
 			const int diff = total_messages - thread_ref(mt_thread);
 			if (diff != 0)
 				for (int i = 0; i < diff; i++){
-					stream_send(client_fd, backlog[backlog_idx - i - 1]);
+					stream_send(client_fd, backlog[backlog_idx - i]);
 					stream_send(client_fd, "\n");
 					thread_ref(mt_thread)++;
 				}
@@ -321,7 +320,6 @@ exit:
 	thread_leave(mt_thread);
 	return;
 }
-
 
 // Appends an item to the backlog
 // Cascades items when overflowing
@@ -414,4 +412,5 @@ int *thread_claim(int n){
 
 void thread_leave(int n){
 	threads[n] = THREAD_EMPTY;
+	return;
 }
